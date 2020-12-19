@@ -1,0 +1,28 @@
+
+[package]
+name = "z-exec"
+version = "0.0.0"
+authors = ["Ciprian Dorin Craciun <ciprian@volution.ro>"]
+edition = "2018"
+
+[features]
+default = []
+
+[dependencies]
+
+[[bin]]
+name = "z-exec"
+path = "./sources/bin.rs"
+
+[lib]
+name = "zexec"
+path = "./sources/lib.rs"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+debug = false
+incremental = false
+panic = "abort"
+
