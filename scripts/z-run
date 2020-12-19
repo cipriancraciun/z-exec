@@ -1,0 +1,16 @@
+#!/dev/null
+
+
+:: debug / build :: exec -- cargo build "${@}"
+:: release / build :: exec -- cargo build --release "${@}"
+
+
+:: debug / run / z-exec :: exec -- cargo run --bin z-exec -- "${@}"
+:: release / run / z-exec :: exec -- cargo run --bin z-exec --release -- "${@}"
+
+:: dependencies / update :: exec -- cargo update --aggressive "${@}"
+
+:: docs / crate / internals / build :: exec -- cargo doc --lib --no-deps --document-private-items "${@}"
+:: docs / crate / exports / build :: exec -- cargo doc --lib --no-deps "${@}"
+:: docs / dependencies / build :: exec -- cargo doc --lib "${@}"
+
