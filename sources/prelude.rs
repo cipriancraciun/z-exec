@@ -27,6 +27,7 @@ pub(crate) mod nix {
 	pub(crate) use nix::unistd::*;
 }
 
+pub(crate) use ::argparse;
 
 
 
