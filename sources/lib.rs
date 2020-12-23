@@ -10,6 +10,7 @@
 mod macros;
 
 
+pub(crate) mod executer;
 pub(crate) mod main;
 pub(crate) mod prelude;
 pub(crate) mod objects;
@@ -28,6 +29,7 @@ pub mod lib {
 	
 	#![ allow (unused_imports) ]
 	
+	pub use crate::executer::*;
 	pub use crate::main::*;
 	pub use crate::objects::*;
 	pub use crate::settings::*;
