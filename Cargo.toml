@@ -9,6 +9,15 @@ edition = "2018"
 default = []
 
 [dependencies]
+serde = "*"
+serde_derive = "*"
+serde_bytes = "*"
+serde_json = "*"
+bincode = "*"
+ron = "*"
+libc = "*"
+nix = "*"
+argparse = "*"
 
 [[bin]]
 name = "z-exec"
