@@ -117,7 +117,7 @@ pub trait DeserializableRon : serde::de::DeserializeOwned {
 		}
 	}
 	
-	fn ron_from_stream <Stream_ : io::Read> (&self, _stream : Stream_) -> Outcome<()> {
+	fn ron_from_stream <Stream_ : io::Read> (_stream : Stream_) -> Outcome<Self> {
 		match serde_ron::de::from_reader (_stream) {
 			Ok (_value) =>
 				return Ok (_value),
