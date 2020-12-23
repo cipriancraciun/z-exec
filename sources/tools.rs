@@ -61,3 +61,11 @@ pub(crate) fn error (_code : u32, _message : impl fmt::Display) -> io::Error {
 	io::Error::new (io::ErrorKind::Other, _message)
 }
 
+
+pub(crate) fn error_wrap (_code : u32, _message : impl fmt::Display, _error : impl error::Error) -> io::Error {
+	
+	let _message = format! ("[{:08x}]  {}  //  {}", _code, _message, _error);
+	
+	io::Error::new (io::ErrorKind::Other, _message)
+}
+

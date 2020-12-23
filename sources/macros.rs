@@ -11,9 +11,24 @@ macro_rules! fail {
 	};
 }
 
+macro_rules! fail_wrap {
+	( $_code : expr, $_message : expr, $_error : expr ) => {
+		return Err ($crate::tools::error_wrap ($_code, format_args! ($_message), $_error));
+	};
+	( $_code : expr, $_format : expr, $( $_arguments : expr, )* $_error : expr ) => {
+		return Err ($crate::tools::error_wrap ($_code, format_args! ($_format, $( $_arguments ),* ), $_error));
+	};
+}
+
 macro_rules! fail_unimplemented {
 	( $_code : expr ) => {
-		return Err ($crate::tools::error ($_code, format_args! ("not implemented")));
+		return Err ($crate::tools::error ($_code, format_args! ("not implemented!")));
+	};
+}
+
+macro_rules! fail_assertion {
+	( $_code : expr ) => {
+		return Err ($crate::tools::error ($_code, format_args! ("failed assertion!")));
 	};
 }
 
