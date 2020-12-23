@@ -19,7 +19,7 @@ pub(crate) const LOG_LEVEL_DEBUG : u16 = 20_000;
 pub(crate) const LOG_LEVEL_TRACE : u16 = 10_000;
 
 
-pub(crate) const TEMPFILE_PREFIX : &str = ".fsas.";
+pub(crate) const TEMPFILE_PREFIX : &str = ".z-exec.";
 pub(crate) const TEMPFILE_SUFFIX : &str = ".tmp";
 pub(crate) const TEMPFILE_TOKEN : usize = 16;
 
