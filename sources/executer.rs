@@ -12,7 +12,7 @@ pub fn execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Ite
 	
 //	close_all_fd () ?;
 	
-	let _executable = convert_osstr_to_cstring (&_command.executable) ?;
+	let _executable = convert_osstr_to_cstring (&_command.executable.as_ref ()) ?;
 	let _arguments = build_arguments (&_descriptor.command) ?;
 	let _environment = build_environment (_descriptor.environment.as_ref (), _environment) ?;
 	
@@ -84,15 +84,15 @@ pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherit
 		for _descriptor in _descriptors.iter () {
 			match _descriptor {
 				VariableDescriptor::Include (_key) => {
-					if let Some (_value) = _inherited.get (_key) {
-						_environment.insert (_key.clone (), _value.clone ());
+					if let Some (_value) = _inherited.get (_key.as_ref ()) {
+						_environment.insert (_key.into (), _value.clone ());
 					}
 				}
 				VariableDescriptor::Exclude (_key) => {
-					_environment.remove (_key);
+					_environment.remove (_key.as_ref ());
 				}
 				VariableDescriptor::Override (_key, _value) => {
-					_environment.insert (_key.clone (), _value.clone ());
+					_environment.insert (_key.into (), _value.into ());
 				}
 			}
 		}

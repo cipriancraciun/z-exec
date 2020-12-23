@@ -14,6 +14,7 @@ pub(crate) use crate::settings::*;
 
 pub(crate) use ::serde;
 pub(crate) use ::serde_derive;
+pub(crate) use ::serde_bytes;
 pub(crate) use ::serde_json;
 pub(crate) use ::bincode as serde_bincode;
 pub(crate) use ::ron as serde_ron;
