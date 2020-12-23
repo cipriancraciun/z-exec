@@ -10,11 +10,13 @@
 mod macros;
 
 
+pub(crate) mod adapters;
 pub(crate) mod executer;
 pub(crate) mod main;
 pub(crate) mod prelude;
 pub(crate) mod objects;
 pub(crate) mod settings;
+pub(crate) mod serialization;
 pub(crate) mod tools;
 
 
@@ -29,10 +31,12 @@ pub mod lib {
 	
 	#![ allow (unused_imports) ]
 	
+	pub use crate::adapters::*;
 	pub use crate::executer::*;
 	pub use crate::main::*;
 	pub use crate::objects::*;
 	pub use crate::settings::*;
+	pub use crate::serialization::*;
 	pub use crate::tools::*;
 }
 

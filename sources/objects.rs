@@ -50,3 +50,8 @@ pub enum IoDescriptor {
 	DevNull,
 }
 
+
+serializable! (ProcessDescriptor : Serializable);
+serializable! (CommandDescriptor : Serializable);
+serializable! (EnvironmentDescriptor : Serializable);
+

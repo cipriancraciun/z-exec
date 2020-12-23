@@ -84,3 +84,31 @@ macro_rules! log_dump_cut {
 	};
 }
 
+
+
+
+#[ macro_export ]
+macro_rules! serializable {
+	
+	( $name : ident : Serializable ) => {
+		impl $crate::serialization::Serializable for $name {}
+		impl $crate::serialization::SerializableJson for $name {}
+		impl $crate::serialization::DeserializableJson for $name {}
+		impl $crate::serialization::SerializableRon for $name {}
+		impl $crate::serialization::DeserializableRon for $name {}
+	};
+	
+	( $name : ident : SerializableOnly ) => {
+		impl $crate::serialization::SerializableOnly for $name {}
+		impl $crate::serialization::SerializableJson for $name {}
+		impl $crate::serialization::SerializableRon for $name {}
+	};
+	
+	( $name : ident : DeserializableOnly ) => {
+		impl $crate::serialization::DeserializableOnly for $name {}
+		impl $crate::serialization::DeserializableJson for $name {}
+		impl $crate::serialization::DeserializableRon for $name {}
+	};
+	
+}
+
