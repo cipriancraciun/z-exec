@@ -76,5 +76,13 @@ pub(crate) use ::std::io::Write as _;
 
 pub(crate) use ::std::os::unix::ffi::OsStrExt as _;
 pub(crate) use ::std::os::unix::ffi::OsStringExt as _;
+pub(crate) use ::std::os::unix::fs::DirEntryExt as _;
+pub(crate) use ::std::os::unix::fs::FileExt as _;
+pub(crate) use ::std::os::unix::fs::FileTypeExt as _;
 pub(crate) use ::std::os::unix::fs::MetadataExt as _;
+pub(crate) use ::std::os::unix::fs::OpenOptionsExt as _;
+pub(crate) use ::std::os::unix::fs::PermissionsExt as _;
+pub(crate) use ::std::os::unix::io::AsRawFd as _;
+pub(crate) use ::std::os::unix::io::IntoRawFd as _;
+pub(crate) use ::std::os::unix::io::FromRawFd as _;
 
