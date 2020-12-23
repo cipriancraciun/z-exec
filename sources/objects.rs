@@ -11,13 +11,13 @@ pub struct ProcessDescriptor {
 	
 	pub command : CommandDescriptor,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub environment : Option<EnvironmentDescriptor>,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub directory : Option<StringDescriptor>,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub stdio : Option<StdioDescriptor>,
 }
 
@@ -27,10 +27,10 @@ pub struct CommandDescriptor {
 	
 	pub executable : StringDescriptor,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub argument0 : Option<StringDescriptor>,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub arguments : Option<Box<[StringDescriptor]>>,
 }
 
@@ -40,16 +40,23 @@ pub struct EnvironmentDescriptor {
 	
 	pub inherit : bool,
 	
-	#[ serde (skip_serializing) ]
+	#[ serde (skip_serializing_if = "Option::is_none") ]
 	pub variables : Option<Box<[VariableDescriptor]>>,
 }
 
 
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
+#[ serde (tag = "action") ]
 pub enum VariableDescriptor {
-	Include (StringDescriptor),
-	Exclude (StringDescriptor),
-	Override (StringDescriptor, StringDescriptor),
+	
+	#[ serde (rename = "include") ]
+	Include { key : StringDescriptor },
+	
+	#[ serde (rename = "exclude") ]
+	Exclude { key : StringDescriptor },
+	
+	#[ serde (rename = "override") ]
+	Override { key : StringDescriptor, value : StringDescriptor },
 }
 
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]

@@ -83,15 +83,15 @@ pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherit
 	if let Some (_descriptors) = &_descriptor.variables {
 		for _descriptor in _descriptors.iter () {
 			match _descriptor {
-				VariableDescriptor::Include (_key) => {
+				VariableDescriptor::Include { key : _key } => {
 					if let Some (_value) = _inherited.get (_key.as_ref ()) {
 						_environment.insert (_key.into (), _value.clone ());
 					}
 				}
-				VariableDescriptor::Exclude (_key) => {
+				VariableDescriptor::Exclude { key : _key } => {
 					_environment.remove (_key.as_ref ());
 				}
-				VariableDescriptor::Override (_key, _value) => {
+				VariableDescriptor::Override { key : _key, value : _value } => {
 					_environment.insert (_key.into (), _value.into ());
 				}
 			}
