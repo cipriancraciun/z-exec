@@ -30,6 +30,8 @@ pub(crate) mod nix {
 
 
 
+
+pub(crate) use ::std::borrow;
 pub(crate) use ::std::cmp;
 pub(crate) use ::std::collections::btree_map;
 pub(crate) use ::std::collections::btree_set;
@@ -51,6 +53,7 @@ pub(crate) use ::std::process;
 pub(crate) use ::std::str;
 
 
+pub(crate) use ::std::borrow::Cow;
 pub(crate) use ::std::cmp::Ord;
 pub(crate) use ::std::cmp::Ordering;
 pub(crate) use ::std::collections::btree_map::BTreeMap;

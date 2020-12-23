@@ -6,6 +6,7 @@ use crate::lib::*;
 
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct ProcessDescriptor {
 	
@@ -22,6 +23,7 @@ pub struct ProcessDescriptor {
 }
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct CommandDescriptor {
 	
@@ -35,6 +37,7 @@ pub struct CommandDescriptor {
 }
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct EnvironmentDescriptor {
 	
@@ -45,6 +48,7 @@ pub struct EnvironmentDescriptor {
 }
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 #[ serde (tag = "action") ]
 pub enum VariableDescriptor {
@@ -59,6 +63,7 @@ pub enum VariableDescriptor {
 	Override { key : StringDescriptor, value : StringDescriptor },
 }
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct StdioDescriptor {
 	pub stdin : IoDescriptor,
@@ -67,6 +72,7 @@ pub struct StdioDescriptor {
 }
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub enum IoDescriptor {
 	Inherit,
@@ -76,6 +82,7 @@ pub enum IoDescriptor {
 
 
 
+#[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct StringDescriptor (
 	
@@ -88,22 +95,31 @@ pub struct StringDescriptor (
 
 impl AsRef<OsStr> for StringDescriptor {
 	fn as_ref (&self) -> &OsStr {
-		// return OsStr::from_bytes (self.0.as_ref ());
 		return OsStr::new (self.0.as_ref ());
 	}
 }
 
 impl Into<OsString> for StringDescriptor {
 	fn into (self) -> OsString {
-		// return OsString::from_vec (self.0.into ());
 		return OsString::from (String::from (self.0));
+	}
+}
+
+impl From<OsString> for StringDescriptor {
+	fn from (_string : OsString) -> Self {
+		return StringDescriptor (String::from (_string.to_string_lossy ()) .into_boxed_str ());
 	}
 }
 
 impl From<&str> for StringDescriptor {
 	fn from (_string : &str) -> Self {
-		// return StringDescriptor (OsString::from (_string) .into_vec () .into_boxed_slice ())
 		return StringDescriptor (String::from (_string) .into_boxed_str ());
+	}
+}
+
+impl From<Vec<u8>> for StringDescriptor {
+	fn from (_string : Vec<u8>) -> Self {
+		return OsString::from_vec (_string) .into ();
 	}
 }
 

@@ -63,10 +63,10 @@ pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherit
 		let mut _map = HashMap::with_capacity (1024);
 		for (_key, _value) in _inherited {
 			if _key.as_bytes () .iter () .any (|&_byte| _byte == b'=') {
-				fail! (0xa67f0db6, "invalid environment (key contains `=`): `{:?}`!", _key);
+				fail! (0xa67f0db6, "invalid environment (key contains `=`): `{}`!", _key.to_string_lossy ());
 			}
 			if let Some (_value) = _map.insert (_key.clone (), _value) {
-				fail! (0x6f0969c8, "invalid environment (duplicate key): `{:?}`!", _key);
+				fail! (0x6f0969c8, "invalid environment (duplicate key): `{}`!", _key.to_string_lossy ());
 			}
 		}
 		_map
@@ -102,7 +102,7 @@ pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherit
 		let mut _pairs = Vec::with_capacity (_environment.len ());
 		for (_key, _value) in _environment.into_iter () {
 			if _key.as_bytes () .iter () .any (|&_byte| _byte == b'=') {
-				fail! (0x28e0c9c8, "invalid environment (key contains `=`): `{:?}`!", _key);
+				fail! (0x28e0c9c8, "invalid environment (key contains `=`): `{}`!", _key.to_string_lossy ());
 			}
 			let mut _key = _key.into_vec ();
 			let mut _value = _value.into_vec ();
@@ -164,7 +164,7 @@ pub fn convert_osstring_to_cstring (_value : OsString) -> Outcome<CString> {
 		Ok (_value) =>
 			Ok (_value),
 		Err (_) =>
-			fail! (0x52417275, "invalid string (contains `\0`): `{:?}`!", _value),
+			fail! (0x52417275, "invalid string (contains `\0`): `{}`!", _value.to_string_lossy ()),
 	}
 }
 
