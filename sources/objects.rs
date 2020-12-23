@@ -8,24 +8,39 @@ use crate::lib::*;
 
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct ProcessDescriptor {
+	
 	pub command : CommandDescriptor,
+	
+	#[ serde (skip_serializing) ]
 	pub environment : Option<EnvironmentDescriptor>,
+	
+	#[ serde (skip_serializing) ]
 	pub directory : Option<StringDescriptor>,
+	
+	#[ serde (skip_serializing) ]
 	pub stdio : Option<StdioDescriptor>,
 }
 
 
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct CommandDescriptor {
+	
 	pub executable : StringDescriptor,
+	
+	#[ serde (skip_serializing) ]
 	pub argument0 : Option<StringDescriptor>,
+	
+	#[ serde (skip_serializing) ]
 	pub arguments : Option<Box<[StringDescriptor]>>,
 }
 
 
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct EnvironmentDescriptor {
+	
 	pub inherit : bool,
+	
+	#[ serde (skip_serializing) ]
 	pub variables : Option<Box<[VariableDescriptor]>>,
 }
 
