@@ -1,6 +1,7 @@
 
 
 use crate::prelude::*;
+use crate::cmd::*;
 use crate::lib::*;
 
 
@@ -32,12 +33,7 @@ pub fn main_server_listen_0 (_options : ServerListenOptions) -> Outcome<()> {
 	
 	let _should_stop = should_stop ();
 	
-	return rpc_server (_path, _path_remove, _should_stop, main_server_listen_handle);
-}
-
-
-fn main_server_listen_handle (_socket : socket2::Socket) -> Outcome<()> {
-	fail_unimplemented! (0xf4a6475a);
+	return rpc_server_loop (_path, _path_remove, _should_stop, server_handle);
 }
 
 
@@ -55,7 +51,57 @@ pub fn main_server_handle (_arguments : &[OsString]) -> Outcome<()> {
 	return main_server_handle_0 (_options);
 }
 
+
 pub fn main_server_handle_0 (_options : ServerHandleOptions) -> Outcome<()> {
+	
 	fail_unimplemented! (0x85d78136);
+}
+
+
+
+
+fn server_handle (_socket : socket2::Socket) -> Outcome<()> {
+	
+	let mut _socket = _socket;
+	let _socket = &mut _socket;
+	
+	log_debug! (0x525491b8, "server begin handling client...");
+	
+	loop {
+		
+		log_debug! (0x9c455e79, "server reading request...");
+		let _request = rpc_read_or_eof::<RpcRequestWrapper> (_socket) ?;
+		let _request = if let Some (_request) = _request {
+			_request
+		} else {
+			break;
+		};
+		
+		match _request {
+			RpcRequestWrapper::Execute (_request) =>
+				server_handle_execute (_socket, _request) ?,
+		}
+	}
+	
+	log_debug! (0x2cac1201, "server finished handling client!");
+	
+	return Ok (());
+}
+
+
+
+
+fn server_handle_execute (_socket : &mut socket2::Socket, _request : RpcExecuteRequest) -> Outcome<()> {
+	
+	log_debug! (0x36901fe1, "server handling execute...");
+	
+	let _reply = match spawn (&_request.descriptor, Some (env::vars_os ())) {
+		Ok (_pid) =>
+			RpcOutcome::Ok (RpcExecuteResponse { pid : _pid }),
+		Err (_error) =>
+			RpcOutcome::Err (_error.to_string ()),
+	};
+	
+	return rpc_write (_socket, &_reply);
 }
 

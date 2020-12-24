@@ -1,6 +1,7 @@
 
 
 use crate::prelude::*;
+use crate::cmd::*;
 use crate::lib::*;
 
 
@@ -94,8 +95,11 @@ pub fn main_execute_0 (_descriptor : ProcessDescriptor, _connect : ServerConnect
 		return Ok (());
 	}
 	
-	execute (&_descriptor, Some (env::vars_os ())) ?;
+	if _connect.is_configured () {
+		return main_client_1 (_descriptor, _connect);
+	}
 	
+	execute (&_descriptor, Some (env::vars_os ())) ?;
 	fail_assertion! (0x117f5a07);
 }
 

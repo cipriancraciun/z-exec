@@ -13,6 +13,7 @@ mod macros;
 pub(crate) mod cmd_main;
 pub(crate) mod cmd_execute;
 pub(crate) mod cmd_server;
+pub(crate) mod cmd_client;
 
 pub(crate) mod adapters;
 pub(crate) mod executer;
@@ -20,6 +21,7 @@ pub(crate) mod objects;
 pub(crate) mod parser;
 pub(crate) mod prelude;
 pub(crate) mod rpc;
+pub(crate) mod rpc_objects;
 pub(crate) mod settings;
 pub(crate) mod serialization;
 pub(crate) mod tools;
@@ -37,6 +39,7 @@ pub mod cmd {
 	pub use crate::cmd_main::*;
 	pub use crate::cmd_execute::*;
 	pub use crate::cmd_server::*;
+	pub use crate::cmd_client::*;
 }
 
 
@@ -49,6 +52,7 @@ pub mod lib {
 	pub use crate::objects::*;
 	pub use crate::parser::*;
 	pub use crate::rpc::*;
+	pub use crate::rpc_objects::*;
 	pub use crate::settings::*;
 	pub use crate::serialization::*;
 	pub use crate::tools::*;
