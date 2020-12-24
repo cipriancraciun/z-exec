@@ -6,7 +6,7 @@ use crate::lib::*;
 
 
 
-pub fn rpc_server (_path : &Path, _path_remove : bool, _should_stop : sync::Arc<atomic::AtomicBool>, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()>
+pub fn rpc_server_loop (_path : &Path, _path_remove : bool, _should_stop : sync::Arc<atomic::AtomicBool>, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()>
 {
 	if _path.exists () {
 		if _path_remove {
@@ -94,7 +94,51 @@ pub fn rpc_server (_path : &Path, _path_remove : bool, _should_stop : sync::Arc<
 
 
 
-pub fn rpc_read <Object : serde::de::DeserializeOwned> (_socket : &mut socket2::Socket) -> Outcome<Option<Object>> {
+pub fn rpc_client_connect (_path : &Path) -> Outcome<socket2::Socket> {
+	
+	let _address = socket2::SockAddr::unix (_path) ?;
+	
+	let mut _socket = socket2::Socket::new (
+			socket2::Domain::unix (),
+			socket2::Type::seqpacket () .cloexec (),
+			None
+		) ?;
+	
+	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) ?;
+	
+	_socket.connect (&_address) ?;
+	
+	return Ok (_socket);
+}
+
+
+pub fn rpc_client_call <Request : RpcRequest<Response = Response>, Response : RpcResponse> (_socket : &mut socket2::Socket, _request : Request) -> Outcome<Response> {
+	
+	let _request = _request.wrap ();
+	rpc_write (_socket, &_request) ?;
+	
+	match rpc_read::<RpcOutcome<Response>> (_socket) ? {
+		RpcOutcome::Ok (_response) =>
+			return Ok (_response),
+		RpcOutcome::Err (_message) =>
+			return Err (io::Error::new (io::ErrorKind::Other, _message)),
+	}
+}
+
+
+
+
+pub fn rpc_read <Payload : Serializable> (_socket : &mut socket2::Socket) -> Outcome<Payload> {
+	match rpc_read_or_eof::<Payload> (_socket) ? {
+		Some (_payload) =>
+			return Ok (_payload),
+		None =>
+			fail! (0x1c8753b2, "failed receiving RPC message (socket closed)!"),
+	}
+}
+
+
+pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket) -> Outcome<Option<Payload>> {
 	
 	use bytes::Buf;
 	
@@ -111,37 +155,49 @@ pub fn rpc_read <Object : serde::de::DeserializeOwned> (_socket : &mut socket2::
 	}
 	_buffer.truncate (_received);
 	
+	log_debug! (0x9daaaaf4, "received RPC message of {} bytes...", _buffer.len ());
+	
 	let mut _buffer = _buffer.reader ();
-	let _object = match serde_bincode::deserialize_from (&mut _buffer) {
-		Ok (_object) =>
-			_object,
-		Err (_error) =>
-			fail_wrap! (0x5aa2eca3, "failed decoding RPC message!", _error),
-	};
+	let _payload = Payload::json_from_stream (&mut _buffer) ?;
+	
+	// FIXME!
+	//let _payload = match serde_bincode::deserialize_from::<_, Payload> (&mut _buffer) {
+	//	Ok (_payload) =>
+	//		_payload,
+	//	Err (_error) =>
+	//		fail_wrap! (0x5aa2eca3, "failed decoding RPC message!", _error),
+	//};
+	
 	let _buffer = _buffer.into_inner ();
 	
 	if ! _buffer.is_empty () {
 		fail! (0x5322b1da, "failed decoding RPC message (buffer garbage)!");
 	}
 	
-	return Ok (Some (_object));
+	return Ok (Some (_payload));
 }
 
 
-pub fn rpc_write <Object : serde::ser::Serialize> (_socket : &mut socket2::Socket, _object : &Object) -> Outcome<()> {
+pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payload : &Payload) -> Outcome<()> {
 	
 	use bytes::BufMut;
 	
 	let _buffer = bytes::BytesMut::with_capacity (RPC_BUFFER_SIZE);
 	
 	let mut _buffer = _buffer.writer ();
-	match serde_bincode::serialize_into (&mut _buffer, _object) {
-		Ok (()) =>
-			(),
-		Err (_error) =>
-			fail_wrap! (0x4c224ae4, "failed encoding RPC message!", _error),
-	}
+	_payload.json_into_stream (&mut _buffer, false) ?;
+	
+	// FIXME!
+	//match serde_bincode::serialize_into (&mut _buffer, _payload) {
+	//	Ok (()) =>
+	//		(),
+	//	Err (_error) =>
+	//		fail_wrap! (0x4c224ae4, "failed encoding RPC message!", _error),
+	//}
+	
 	let _buffer = _buffer.into_inner ();
+	
+	log_debug! (0xafd88ce8, "sending RPC message of {} bytes...", _buffer.len ());
 	
 	let _sent = _socket.send (_buffer.deref ()) ?;
 	if _sent != _buffer.len () {
