@@ -1,0 +1,8 @@
+{
+	"command" : {
+		"executable" : "true"
+	},
+	"environment" : {
+		"inherit" : false
+	}
+}

@@ -1,0 +1,17 @@
+ProcessDescriptor {
+    command: CommandDescriptor {
+        executable: StringDescriptor(
+            "true",
+        ),
+        argument0: None,
+        arguments: None,
+    },
+    environment: Some(
+        EnvironmentDescriptor {
+            inherit: false,
+            variables: None,
+        },
+    ),
+    directory: None,
+    stdio: None,
+}
