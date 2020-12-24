@@ -59,7 +59,8 @@
 	ln -s -T -f -- ../release "${_target}/release"
 	ln -s -T -f -- ../debug "${_target}/debug"
 	
-	ln -s -T -f -- ./.outputs/target ./target
+	ln -s -T -f -- ./release/z-exec "${_outputs}/z-exec--release"
+	ln -s -T -f -- ./debug/z-exec "${_outputs}/z-exec--debug"
 !!
 
 
@@ -80,7 +81,7 @@
 	if test "${__cargo_build:-true}" == true ; then
 		"${ZRUN[@]}" ':: debug / build / z-exec'
 	fi
-	exec -- ./target/debug/z-exec "${@}"
+	exec -- ./.outputs/z-exec--debug "${@}"
 !!
 
 
