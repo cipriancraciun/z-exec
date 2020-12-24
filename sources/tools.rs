@@ -69,3 +69,31 @@ pub(crate) fn error_wrap (_code : u32, _message : impl fmt::Display, _error : im
 	io::Error::new (io::ErrorKind::Other, _message)
 }
 
+
+
+
+pub(crate) fn should_stop () -> sync::Arc<atomic::AtomicBool> {
+	return SHOULD_STOP.clone ();
+}
+
+
+lazy_static::lazy_static! {
+	static ref SHOULD_STOP : sync::Arc<atomic::AtomicBool> = {
+		let _signals = &[
+				signal_sig::SIGINT,
+				signal_sig::SIGTERM,
+				signal_sig::SIGQUIT,
+				signal_sig::SIGHUP,
+				signal_sig::SIGPIPE,
+				signal_sig::SIGABRT,
+			];
+		let _flag = sync::Arc::new (atomic::AtomicBool::new (false));
+		for &_signal in _signals {
+			if let Err (_error) = signal_flag::register (_signal, _flag.clone ()) {
+				log_error! (0x7c1c89e8, "unexpected error encountered;  ignoring!  //  {}", _error);
+			}
+		}
+		_flag
+	};
+}
+
