@@ -25,11 +25,11 @@ socket2 = { version = "*", features = ["unix"] }
 
 [[bin]]
 name = "z-exec"
-path = "./sources/bin.rs"
+path = "./bin.rs"
 
 [lib]
 name = "zexec"
-path = "./sources/lib.rs"
+path = "./lib.rs"
 
 [profile.release]
 opt-level = 3
