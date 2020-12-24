@@ -14,20 +14,29 @@
 
 
 
-:: debug / run / z-exec :: exec -- cargo run --bin z-exec -- "${@}"
-:: release / run / z-exec :: exec -- cargo run --bin z-exec --release -- "${@}"
+:: debug / build / z-exec :: exec -- "${ZRUN[@]}" ':: cargo / tool' build --bin z-exec -- "${@}"
+:: release / build / z-exec :: exec -- "${ZRUN[@]}" ':: cargo / tool' build --bin z-exec --release -- "${@}"
 
-:: debug / build / z-exec :: exec -- cargo build --bin z-exec -- "${@}"
-:: release / build / z-exec :: exec -- cargo build --bin z-exec --release -- "${@}"
+:: docs / crate / internals / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' doc --lib --no-deps --document-private-items "${@}"
+:: docs / crate / exports / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' doc --lib --no-deps "${@}"
+:: docs / dependencies / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' doc --lib "${@}"
 
-:: docs / crate / internals / build :: exec -- cargo doc --lib --no-deps --document-private-items "${@}"
-:: docs / crate / exports / build :: exec -- cargo doc --lib --no-deps "${@}"
-:: docs / dependencies / build :: exec -- cargo doc --lib "${@}"
-
-:: cargo / debug / build :: exec -- cargo build "${@}"
-:: cargo / release / build :: exec -- cargo build --release "${@}"
+:: cargo / debug / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' build "${@}"
+:: cargo / release / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' build --release "${@}"
 
 :: cargo / dependencies / update :: exec -- cargo update --aggressive "${@}"
+
+<< cargo / tool
+	test "${#}" -ge 1
+	_outputs="$( exec -- readlink -e -- ./.outputs )"
+	_sources="$( exec -- readlink -e -- ./sources )"
+	
+	export -- CARGO_TARGET_DIR="${_outputs}/target"
+	
+	cd -- "${_sources}"
+	
+	exec -- cargo "${@}"
+!!
 
 
 
