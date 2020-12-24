@@ -17,7 +17,11 @@ bincode = "*"
 ron = "*"
 libc = "*"
 nix = "*"
+crossbeam = "*"
 argparse = "*"
+scopeguard = "*"
+signal-hook = "*"
+socket2 = { version = "*", features = ["unix"] }
 
 [[bin]]
 name = "z-exec"
