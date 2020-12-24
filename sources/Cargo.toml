@@ -11,9 +11,7 @@ default = []
 [dependencies]
 serde = "*"
 serde_derive = "*"
-serde_bytes = "*"
 serde_json = "*"
-bincode = "*"
 ron = "*"
 libc = "*"
 nix = "*"
