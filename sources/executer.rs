@@ -25,6 +25,30 @@ pub fn execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Ite
 }
 
 
+pub fn spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<libc::pid_t> {
+	
+	match unsafe { nix::fork () } {
+		
+		Ok (nix::ForkResult::Parent { child : _child, .. }) =>
+			return Ok (_child.as_raw ()),
+		
+		Ok (nix::ForkResult::Child) => {
+			match execute (_descriptor, _environment) {
+				Ok (_) =>
+					fail_assertion! (0x32933043),
+				Err (_error) => {
+					log_error! (0xdad78bb5, "unexpected error encountered;  aborting!  //  {}", _error);
+					process::exit (1);
+				}
+			}
+		}
+		
+		Err (_error) =>
+			fail_wrap! (0x16900d78, "failed fork!", _error),
+	}
+}
+
+
 
 
 pub fn build_arguments (_descriptor : &CommandDescriptor) -> Outcome<Vec<CString>> {
