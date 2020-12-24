@@ -118,20 +118,39 @@ impl ExecuteOptions {
 
 #[ derive (Debug) ]
 #[ derive (Default) ]
-pub struct ServerOptions {
+pub struct ServerListenOptions {
 	pub unix_path : Option<PathBuf>,
 	pub unix_path_remove : Option<bool>,
 }
 
 
-impl ServerOptions {
+impl ServerListenOptions {
 	
 	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
 		
 		_parser.refer (&mut self.unix_path) .metavar ("<unix.path>")
-				.add_option (&["-u", "--unix", "--unix-path"], argparse::StoreOption, "UNIX domain socket path");
+				.add_option (&["-u", "--unix-path"], argparse::StoreOption, "UNIX domain socket path");
 		_parser.refer (&mut self.unix_path_remove) .metavar ("<unix.path_remove>")
 				.add_option (&["--unix-path-remove"], argparse::StoreConst (Some (true)), "remove UNIX domain socket path if it exists");
+	}
+}
+
+
+
+
+#[ derive (Debug) ]
+#[ derive (Default) ]
+pub struct ServerHandleOptions {
+	pub unix_fd : Option<u16>,
+}
+
+
+impl ServerHandleOptions {
+	
+	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
+		
+		_parser.refer (&mut self.unix_fd) .metavar ("<unix.path>")
+				.add_option (&["--unix-fd"], argparse::StoreOption, "UNIX domain socket descriptor");
 	}
 }
 
