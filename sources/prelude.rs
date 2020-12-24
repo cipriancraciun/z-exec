@@ -36,6 +36,7 @@ pub(crate) mod nix {
 	pub(crate) use nix::unistd::*;
 }
 
+pub(crate) use ::lazy_static;
 pub(crate) use ::scopeguard;
 pub(crate) use ::argparse;
 

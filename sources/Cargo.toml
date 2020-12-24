@@ -21,6 +21,7 @@ crossbeam = "*"
 argparse = "*"
 scopeguard = "*"
 signal-hook = "*"
+lazy_static = "*"
 socket2 = { version = "*", features = ["unix"] }
 
 [[bin]]

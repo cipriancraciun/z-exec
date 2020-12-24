@@ -324,6 +324,7 @@ dependencies = [
  "argparse",
  "bincode",
  "crossbeam",
+ "lazy_static",
  "libc",
  "nix",
  "ron",
