@@ -110,5 +110,24 @@ macro_rules! serializable {
 		impl $crate::serialization::DeserializableRon for $name {}
 	};
 	
+	( $name : ident <$type : ident> : Serializable ) => {
+		impl <$type : $crate::serialization::Serializable> $crate::serialization::Serializable for $name <$type> {}
+		impl <$type : $crate::serialization::SerializableJson> $crate::serialization::SerializableJson for $name <$type> {}
+		impl <$type : $crate::serialization::DeserializableJson> $crate::serialization::DeserializableJson for $name <$type> {}
+		impl <$type : $crate::serialization::SerializableRon> $crate::serialization::SerializableRon for $name <$type> {}
+		impl <$type : $crate::serialization::DeserializableRon> $crate::serialization::DeserializableRon for $name <$type> {}
+	};
+	
+	( $name : ident <$type : ident> : SerializableOnly ) => {
+		impl <$type : $crate::serialization::SerializableOnly> $crate::serialization::SerializableOnly for $name <$type> {}
+		impl <$type : $crate::serialization::SerializableJson> $crate::serialization::SerializableJson for $name <$type> {}
+		impl <$type : $crate::serialization::SerializableRon> $crate::serialization::SerializableRon for $name <$type> {}
+	};
+	
+	( $name : ident <$type : ident> : DeserializableOnly ) => {
+		impl <$type : $crate::serialization::DeserializableOnly> $crate::serialization::DeserializableOnly for $name <$type> {}
+		impl <$type : $crate::serialization::DeserializableJson> $crate::serialization::DeserializableJson for $name <$type> {}
+		impl <$type : $crate::serialization::DeserializableRon> $crate::serialization::DeserializableRon for $name <$type> {}
+	};
 }
 
