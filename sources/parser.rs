@@ -126,6 +126,10 @@ pub struct ServerListenOptions {
 
 impl ServerListenOptions {
 	
+	pub fn is_configured (&self) -> bool {
+		return self.unix_path.is_some () || self.unix_path_remove.is_some ();
+	}
+	
 	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
 		
 		_parser.refer (&mut self.unix_path) .metavar ("<unix.path>")
@@ -147,6 +151,10 @@ pub struct ServerHandleOptions {
 
 impl ServerHandleOptions {
 	
+	pub fn is_configured (&self) -> bool {
+		return self.unix_fd.is_some ();
+	}
+	
 	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
 		
 		_parser.refer (&mut self.unix_fd) .metavar ("<unix.path>")
@@ -159,11 +167,34 @@ impl ServerHandleOptions {
 
 #[ derive (Debug) ]
 #[ derive (Default) ]
+pub struct ServerConnectOptions {
+	pub unix_path : Option<PathBuf>,
+}
+
+
+impl ServerConnectOptions {
+	
+	pub fn is_configured (&self) -> bool {
+		return self.unix_path.is_some ();
+	}
+	
+	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
+		
+		_parser.refer (&mut self.unix_path) .metavar ("<unix.path>")
+				.add_option (&["-u", "--unix-path"], argparse::StoreOption, "UNIX domain socket path");
+	}
+}
+
+
+
+
+#[ derive (Debug) ]
+#[ derive (Default) ]
 pub struct DumpOptions {
 	
-	pub rust : bool,
-	pub ron : bool,
-	pub json : bool,
+	pub rust : Option<bool>,
+	pub ron : Option<bool>,
+	pub json : Option<bool>,
 }
 
 
@@ -172,19 +203,19 @@ impl DumpOptions {
 	pub fn parser_prepare <'a, 'b : 'a> (&'b mut self, _parser : &mut argparse::ArgumentParser<'a>) -> () {
 		
 		_parser.refer (&mut self.rust)
-				.add_option (&["--dump-rust"], argparse::StoreTrue, "dump process descriptor in Rust debug format");
+				.add_option (&["--dump-rust"], argparse::StoreConst (Some (true)), "dump process descriptor in Rust debug format");
 		_parser.refer (&mut self.ron)
-				.add_option (&["--dump-ron"], argparse::StoreTrue, "dump process descriptor in RON (Rusty Object Notation)");
+				.add_option (&["--dump-ron"], argparse::StoreConst (Some (true)), "dump process descriptor in RON (Rusty Object Notation)");
 		_parser.refer (&mut self.json)
-				.add_option (&["--dump-json"], argparse::StoreTrue, "dump process descriptor in JSON format");
+				.add_option (&["--dump-json"], argparse::StoreConst (Some (true)), "dump process descriptor in JSON format");
 	}
 	
-	pub fn any (&self) -> bool {
-		return self.rust || self.json || self.ron;
+	pub fn is_configured (&self) -> bool {
+		return self.rust.is_some () || self.json.is_some () || self.ron.is_some ();
 	}
 	
 	pub fn dump_rust (&self, _object : &impl fmt::Debug, _output : Option<&mut dyn io::Write>) -> Outcome<()> {
-		if ! self.rust {
+		if ! self.rust.unwrap_or (false) {
 			return Ok (());
 		}
 		return self.dump_0 (
@@ -197,7 +228,7 @@ impl DumpOptions {
 	}
 	
 	pub fn dump_ron (&self, _object : &impl SerializableRon, _output : Option<&mut dyn io::Write>) -> Outcome<()> {
-		if ! self.ron {
+		if ! self.ron.unwrap_or (false) {
 			return Ok (());
 		}
 		return self.dump_0 (
@@ -210,7 +241,7 @@ impl DumpOptions {
 	}
 	
 	pub fn dump_json (&self, _object : &impl SerializableJson, _output : Option<&mut dyn io::Write>) -> Outcome<()> {
-		if ! self.json {
+		if ! self.json.unwrap_or (false) {
 			return Ok (());
 		}
 		return self.dump_0 (

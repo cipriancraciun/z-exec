@@ -9,17 +9,20 @@ use crate::lib::*;
 pub fn main_execute (_arguments : &[OsString]) -> Outcome<()> {
 	
 	let mut _options = ExecuteOptions::default ();
+	
+	let mut _connect = ServerConnectOptions::default ();
 	let mut _dump = DumpOptions::default ();
 	
 	let mut _parser = parser_prepare ();
 	_options.parser_prepare (&mut _parser);
+	_connect.parser_prepare (&mut _parser);
 	_dump.parser_prepare (&mut _parser);
 	parser_execute (&_parser, "execute", _arguments) ?;
 	drop (_parser);
 	
 	let _descriptor = _options.descriptor_build () ?;
 	
-	return main_execute_0 (_descriptor, _dump);
+	return main_execute_0 (_descriptor, _connect, _dump);
 }
 
 
@@ -28,9 +31,12 @@ pub fn main_execute_from (_arguments : &[OsString]) -> Outcome<()> {
 	let mut _load_path : Option<PathBuf> = None;
 	let mut _load_fd : Option<u16> = None;
 	let mut _load_format : &str = "json";
+	
+	let mut _connect = ServerConnectOptions::default ();
 	let mut _dump = DumpOptions::default ();
 	
 	let mut _parser = parser_prepare ();
+	
 	_parser.refer (&mut _load_path) .metavar ("<path>")
 			.add_option (&["-f", "--from-file"], argparse::StoreOption, "load execution descriptor from given file (else use stdin)");
 	_parser.refer (&mut _load_fd) .metavar ("<fd>")
@@ -39,6 +45,7 @@ pub fn main_execute_from (_arguments : &[OsString]) -> Outcome<()> {
 			.add_option (&["--json"], argparse::StoreConst ("json"), "expect JSON serialization")
 			.add_option (&["--ron"], argparse::StoreConst ("ron"), "expect RON serialization");
 	
+	_connect.parser_prepare (&mut _parser);
 	_dump.parser_prepare (&mut _parser);
 	parser_execute (&_parser, "execute-from", _arguments) ?;
 	drop (_parser);
@@ -70,13 +77,17 @@ pub fn main_execute_from (_arguments : &[OsString]) -> Outcome<()> {
 	drop (_load_stream);
 	drop (_stdin);
 	
-	return main_execute_0 (_descriptor, _dump);
+	return main_execute_0 (_descriptor, _connect, _dump);
 }
 
 
-pub fn main_execute_0 (_descriptor : ProcessDescriptor, _dump : DumpOptions) -> Outcome<()> {
+pub fn main_execute_0 (_descriptor : ProcessDescriptor, _connect : ServerConnectOptions, _dump : DumpOptions) -> Outcome<()> {
 	
-	if _dump.any () {
+	if _dump.is_configured () && _connect.is_configured () {
+		fail! (0x93c50cd6, "invalid arguments (both dump and connect given)!");
+	}
+	
+	if _dump.is_configured () {
 		_dump.dump_rust (&_descriptor, None) ?;
 		_dump.dump_ron (&_descriptor, None) ?;
 		_dump.dump_json (&_descriptor, None) ?;
