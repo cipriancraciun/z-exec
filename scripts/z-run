@@ -2,13 +2,14 @@
 
 
 
-::// z-exec / examples / ...
+
+::// do / examples / ...
 
 ::// debug / ...
 ::// release / ...
 ::// docs / ...
 ::// cargo / ...
-
+::// workspace / ...
 
 
 
@@ -31,7 +32,42 @@
 
 
 
-<< z-exec
+<< workspace / initialize / rust
+	test "${#}" -eq 0
+	_outputs="$( exec -- readlink -e -- ./.outputs )"
+	_sources="$( exec -- readlink -e -- ./sources )"
+	
+	_target="${_outputs}/target"
+	_release="${_outputs}/release"
+	_debug="${_outputs}/debug"
+	
+	for _folder in "${_target}" "${_release}" "${_debug}" ; do
+		if test ! -e "${_folder}" ; then
+			mkdir -- "${_folder}"
+		fi
+	done
+	
+	ln -s -T -f -- ../release "${_target}/release"
+	ln -s -T -f -- ../debug "${_target}/debug"
+	
+	ln -s -T -f -- ./.outputs/target ./target
+!!
+
+
+<< workspace / initialize / outputs
+	test "${#}" -eq 0
+	if test ! -d ./.outputs ; then
+		_outputs_store="${TMPDIR:-/tmp}/z-exec--${UID}--${RANDOM}-${RANDOM}-${RANDOM}-${RANDOM}"
+		mkdir -- "${_outputs_store}"
+		_outputs_store="$( exec -- readlink -e -- "${_outputs_store}" )"
+		ln -s -f -T -- "${_outputs_store}" ./.outputs
+	fi
+!!
+
+
+
+
+<< do
 	if test "${__cargo_build:-true}" == true ; then
 		"${ZRUN[@]}" ':: debug / build / z-exec'
 	fi
@@ -41,7 +77,7 @@
 
 
 
---<< z-exec / examples / exec / __
+--<< do / examples / exec / __
 	
 	test "${#}" -eq 1
 	_example="${1}"
@@ -49,13 +85,13 @@
 	
 	_source="./examples/${_example}.json"
 	
-	exec -- "${ZRUN[@]}" ':: z-exec' execute-from \
+	exec -- "${ZRUN[@]}" ':: do' execute-from \
 			--from-file "${_source}" \
 			--json \
 	#
 !!
 
---<< z-exec / examples / dump / __
+--<< do / examples / dump / __
 	
 	test "${#}" -eq 1
 	_example="${1}"
@@ -64,7 +100,7 @@
 	_source="./examples/${_example}.json"
 	_output="./examples/${_example}.txt"
 	
-	exec -- "${ZRUN[@]}" ':: z-exec' execute-from \
+	exec -- "${ZRUN[@]}" ':: do' execute-from \
 			--from-file "${_source}" \
 			--json \
 			--dump-rust \
@@ -72,7 +108,7 @@
 	#
 !!
 
-<<== z-exec / examples / generate
+<<== do / examples / generate
 	#! <template>
 	
 	{{ $_examples := array "true" "env" }}
@@ -81,15 +117,15 @@
 	{{ range $_, $_action := $_actions }}
 	
 	{{ range $_, $_example := $_examples }}
-	:: z-exec / examples / {{ $_action }} / {{ $_example }} :: exec -- "${ZRUN[@]}" ':: z-exec / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
+	:: do / examples / {{ $_action }} / {{ $_example }} :: exec -- "${ZRUN[@]}" ':: do / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
 	{{ end }}
 	
-	<< z-exec / examples / {{ $_action }} / all
+	<< do / examples / {{ $_action }} / all
 		"${ZRUN[@]}" ':: debug / build / z-exec'
 		export -- __cargo_build=false
 		{{ range $_, $_example := $_examples }}
 		printf -- '[xx]  processing `%s` for `%s`...\n' '{{ $_action }}' {{ $_example | shell_quote }} >&2
-		"${ZRUN[@]}" ':: z-exec / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
+		"${ZRUN[@]}" ':: do / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
 		{{ end }}
 	!!
 	
