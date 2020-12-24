@@ -1,16 +1,98 @@
 #!/dev/null
 
 
-:: debug / build :: exec -- cargo build "${@}"
-:: release / build :: exec -- cargo build --release "${@}"
+
+::// z-exec / examples / ...
+
+::// debug / ...
+::// release / ...
+::// docs / ...
+::// cargo / ...
+
+
+
 
 
 :: debug / run / z-exec :: exec -- cargo run --bin z-exec -- "${@}"
 :: release / run / z-exec :: exec -- cargo run --bin z-exec --release -- "${@}"
 
-:: dependencies / update :: exec -- cargo update --aggressive "${@}"
+:: debug / build / z-exec :: exec -- cargo build --bin z-exec -- "${@}"
+:: release / build / z-exec :: exec -- cargo build --bin z-exec --release -- "${@}"
 
 :: docs / crate / internals / build :: exec -- cargo doc --lib --no-deps --document-private-items "${@}"
 :: docs / crate / exports / build :: exec -- cargo doc --lib --no-deps "${@}"
 :: docs / dependencies / build :: exec -- cargo doc --lib "${@}"
+
+:: cargo / debug / build :: exec -- cargo build "${@}"
+:: cargo / release / build :: exec -- cargo build --release "${@}"
+
+:: cargo / dependencies / update :: exec -- cargo update --aggressive "${@}"
+
+
+
+
+<< z-exec
+	if test "${__cargo_build:-true}" == true ; then
+		"${ZRUN[@]}" ':: debug / build / z-exec'
+	fi
+	exec -- ./target/debug/z-exec "${@}"
+!!
+
+
+
+
+--<< z-exec / examples / exec / __
+	
+	test "${#}" -eq 1
+	_example="${1}"
+	shift -- 1
+	
+	_source="./examples/${_example}.json"
+	
+	exec -- "${ZRUN[@]}" ':: z-exec' execute-from \
+			--from-file "${_source}" \
+			--json \
+	#
+!!
+
+--<< z-exec / examples / dump / __
+	
+	test "${#}" -eq 1
+	_example="${1}"
+	shift -- 1
+	
+	_source="./examples/${_example}.json"
+	_output="./examples/${_example}.txt"
+	
+	exec -- "${ZRUN[@]}" ':: z-exec' execute-from \
+			--from-file "${_source}" \
+			--json \
+			--dump-rust \
+		>| "${_output}" \
+	#
+!!
+
+<<== z-exec / examples / generate
+	#! <template>
+	
+	{{ $_examples := array "true" "env" }}
+	{{ $_actions := array "dump" "exec" }}
+	
+	{{ range $_, $_action := $_actions }}
+	
+	{{ range $_, $_example := $_examples }}
+	:: z-exec / examples / {{ $_action }} / {{ $_example }} :: exec -- "${ZRUN[@]}" ':: z-exec / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
+	{{ end }}
+	
+	<< z-exec / examples / {{ $_action }} / all
+		"${ZRUN[@]}" ':: debug / build / z-exec'
+		export -- __cargo_build=false
+		{{ range $_, $_example := $_examples }}
+		printf -- '[xx]  processing `%s` for `%s`...\n' '{{ $_action }}' {{ $_example | shell_quote }} >&2
+		"${ZRUN[@]}" ':: z-exec / examples / {{ $_action }} / __' {{ $_example | shell_quote }} "${@}"
+		{{ end }}
+	!!
+	
+	{{ end }}
+!!
 
