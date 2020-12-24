@@ -20,13 +20,23 @@ pub(crate) use ::bincode as serde_bincode;
 pub(crate) use ::ron as serde_ron;
 
 pub(crate) use ::libc;
+pub(crate) use ::socket2;
+
+pub(crate) use ::crossbeam;
+pub(crate) use ::crossbeam::sync as crossbeam_sync;
+
+pub(crate) use ::signal_hook;
+pub(crate) use ::signal_hook::flag as signal_flag;
+pub(crate) use ::signal_hook::consts::signal as signal_sig;
 
 pub(crate) mod nix {
 	pub(crate) use nix::Error;
 	pub(crate) use nix::errno::*;
+	pub(crate) use nix::errno::Errno::*;
 	pub(crate) use nix::unistd::*;
 }
 
+pub(crate) use ::scopeguard;
 pub(crate) use ::argparse;
 
 
@@ -45,13 +55,19 @@ pub(crate) use ::std::fmt;
 pub(crate) use ::std::fs;
 pub(crate) use ::std::io;
 pub(crate) use ::std::mem;
+pub(crate) use ::std::net;
 pub(crate) use ::std::ops;
 pub(crate) use ::std::os::unix::ffi as ffi_unix;
 pub(crate) use ::std::os::unix::fs as fs_unix;
 pub(crate) use ::std::os::unix::io as io_unix;
+pub(crate) use ::std::os::unix::net as net_unix;
 pub(crate) use ::std::path;
 pub(crate) use ::std::process;
 pub(crate) use ::std::str;
+pub(crate) use ::std::sync;
+pub(crate) use ::std::sync::atomic as atomic;
+pub(crate) use ::std::time;
+pub(crate) use ::std::thread;
 
 
 pub(crate) use ::std::borrow::Cow;
