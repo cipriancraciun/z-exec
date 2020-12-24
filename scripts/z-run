@@ -84,6 +84,10 @@
 	exec -- ./.outputs/z-exec--debug "${@}"
 !!
 
+:: do / execute :: exec -- "${ZRUN[@]}" ':: do' execute "${@}"
+:: do / execute-from :: exec -- "${ZRUN[@]}" ':: do' execute-from "${@}"
+:: do / server :: exec -- "${ZRUN[@]}" ':: do' server --unix-path /tmp/z-exec.socket "${@}"
+
 
 
 
