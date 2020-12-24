@@ -24,7 +24,7 @@
 :: cargo / debug / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' build "${@}"
 :: cargo / release / build :: exec -- "${ZRUN[@]}" ':: cargo / tool' build --release "${@}"
 
-:: cargo / dependencies / update :: exec -- cargo update --aggressive "${@}"
+:: cargo / dependencies / update :: exec -- "${ZRUN[@]}" ':: cargo / tool' update --aggressive "${@}"
 
 << cargo / tool
 	test "${#}" -ge 1
