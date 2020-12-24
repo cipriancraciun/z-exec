@@ -48,13 +48,15 @@ pub fn main_execute_from (_arguments : &[OsString]) -> Outcome<()> {
 	}
 	
 	let mut _stdin = io::stdin ();
-	let mut _load_stream : Box<dyn io::Read> = if let Some (_load_path) = _load_path {
+	let _load_stream : Box<dyn io::Read> = if let Some (_load_path) = _load_path {
 		Box::new (fs::File::open (_load_path) ?)
 	} else if let Some (_load_fd) = _load_fd {
 		Box::new (unsafe { fs::File::from_raw_fd (_load_fd as io_unix::RawFd) })
 	} else {
 		Box::new (_stdin.lock ())
 	};
+	
+	let mut _load_stream = io::BufReader::new (_load_stream);
 	
 	let _descriptor = match _load_format {
 		"json" =>
