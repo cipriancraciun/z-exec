@@ -21,6 +21,7 @@ pub(crate) use ::ron as serde_ron;
 
 pub(crate) use ::libc;
 pub(crate) use ::socket2;
+pub(crate) use ::bytes;
 
 pub(crate) use ::crossbeam;
 pub(crate) use ::crossbeam::sync as crossbeam_sync;

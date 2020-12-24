@@ -23,6 +23,7 @@ scopeguard = "*"
 signal-hook = "*"
 lazy_static = "*"
 socket2 = { version = "*", features = ["unix"] }
+bytes = "*"
 
 [[bin]]
 name = "z-exec"
