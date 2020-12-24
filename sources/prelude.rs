@@ -50,6 +50,7 @@ pub(crate) use ::std::collections::btree_map;
 pub(crate) use ::std::collections::btree_set;
 pub(crate) use ::std::collections::hash_map;
 pub(crate) use ::std::collections::hash_set;
+pub(crate) use ::std::convert;
 pub(crate) use ::std::env;
 pub(crate) use ::std::error;
 pub(crate) use ::std::ffi;
@@ -73,18 +74,24 @@ pub(crate) use ::std::thread;
 
 
 pub(crate) use ::std::borrow::Cow;
+pub(crate) use ::std::borrow::Borrow;
+pub(crate) use ::std::borrow::BorrowMut;
 pub(crate) use ::std::cmp::Ord;
 pub(crate) use ::std::cmp::Ordering;
 pub(crate) use ::std::collections::btree_map::BTreeMap;
 pub(crate) use ::std::collections::btree_set::BTreeSet;
 pub(crate) use ::std::collections::hash_map::HashMap;
 pub(crate) use ::std::collections::hash_set::HashSet;
+pub(crate) use ::std::convert::AsMut;
+pub(crate) use ::std::convert::AsRef;
 pub(crate) use ::std::convert::Infallible;
 pub(crate) use ::std::ffi::CStr;
 pub(crate) use ::std::ffi::CString;
 pub(crate) use ::std::ffi::OsStr;
 pub(crate) use ::std::ffi::OsString;
 pub(crate) use ::std::ops::Bound;
+pub(crate) use ::std::ops::Deref;
+pub(crate) use ::std::ops::DerefMut;
 pub(crate) use ::std::path::Path;
 pub(crate) use ::std::path::PathBuf;
 

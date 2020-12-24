@@ -91,3 +91,63 @@ pub fn rpc_server (_path : &Path, _path_remove : bool, _should_stop : sync::Arc<
 	return Ok (());
 }
 
+
+
+
+pub fn rpc_read <Object : serde::de::DeserializeOwned> (_socket : &mut socket2::Socket) -> Outcome<Option<Object>> {
+	
+	use bytes::Buf;
+	
+	let mut _buffer = bytes::BytesMut::with_capacity (RPC_BUFFER_SIZE);
+	unsafe { _buffer.set_len (RPC_BUFFER_SIZE); }
+	
+	// NOTE:  We are using UNIX domain sockets of type sequence packets, thus packet boundary is solved by the OS.
+	let _received = _socket.recv (_buffer.deref_mut ()) ?;
+	if _received == 0 {
+		return Ok (None);
+	}
+	if _received < 1 {
+		fail! (0x2f2e7dc8, "failed receiving RPC message (buffer truncated)!");
+	}
+	_buffer.truncate (_received);
+	
+	let mut _buffer = _buffer.reader ();
+	let _object = match serde_bincode::deserialize_from (&mut _buffer) {
+		Ok (_object) =>
+			_object,
+		Err (_error) =>
+			fail_wrap! (0x5aa2eca3, "failed decoding RPC message!", _error),
+	};
+	let _buffer = _buffer.into_inner ();
+	
+	if ! _buffer.is_empty () {
+		fail! (0x5322b1da, "failed decoding RPC message (buffer garbage)!");
+	}
+	
+	return Ok (Some (_object));
+}
+
+
+pub fn rpc_write <Object : serde::ser::Serialize> (_socket : &mut socket2::Socket, _object : &Object) -> Outcome<()> {
+	
+	use bytes::BufMut;
+	
+	let _buffer = bytes::BytesMut::with_capacity (RPC_BUFFER_SIZE);
+	
+	let mut _buffer = _buffer.writer ();
+	match serde_bincode::serialize_into (&mut _buffer, _object) {
+		Ok (()) =>
+			(),
+		Err (_error) =>
+			fail_wrap! (0x4c224ae4, "failed encoding RPC message!", _error),
+	}
+	let _buffer = _buffer.into_inner ();
+	
+	let _sent = _socket.send (_buffer.deref ()) ?;
+	if _sent != _buffer.len () {
+		fail! (0x39a8d8cf, "failed sending RPC message (buffer truncated)!");
+	}
+	
+	return Ok (());
+}
+

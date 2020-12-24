@@ -23,3 +23,6 @@ pub(crate) const TEMPFILE_PREFIX : &str = ".z-exec.";
 pub(crate) const TEMPFILE_SUFFIX : &str = ".tmp";
 pub(crate) const TEMPFILE_TOKEN : usize = 16;
 
+
+pub(crate) const RPC_BUFFER_SIZE : usize = 1024 * 1024;
+
