@@ -1,5 +1,5 @@
 
-# **z-exec** -- Process execution tool
+# **z-exec** -- lightweight Rust-based process execution tool
 
 
 
