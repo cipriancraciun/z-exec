@@ -66,24 +66,26 @@ pub fn rpc_server_cleanup (_path : &Path, _socket : socket2::Socket, _socket_met
 
 
 
-pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTrigger, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()> {
+pub fn rpc_server_accept_once (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger, _timeout : time::Duration) -> Outcome<Option<socket2::Socket>> {
 	
 	log_debug! (0xbf2564c9, "server socket accepting...");
 	
-	let _should_wait = crossbeam_sync::WaitGroup::new ();
-	
-	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) .or_wrap (0x2e25e024) ?;
+	_socket.set_read_timeout (Some (_timeout)) .or_wrap (0x2e25e024) ?;
 	
 	loop {
 		
 		if _should_stop.is_triggered () {
 			log_debug! (0x5d8283e8, "server socket breaking...");
-			break;
+			return Ok (None);
 		}
 		
 		let _socket = match _socket.accept () {
-			Ok ((_socket, _)) =>
-				_socket,
+			
+			Ok ((_socket, _)) => {
+				log_debug! (0x7b8fad6d, "server socket accepted;");
+				return Ok (Some (_socket));
+			}
+			
 			Err (_error) =>
 				match _error.raw_os_error () .map (nix::Errno::from_i32) {
 					Some (nix::EAGAIN) =>
@@ -92,8 +94,23 @@ pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTri
 						fail_wrap! (0x39fa3406, _error),
 				}
 		};
+	}
+}
+
+
+
+
+pub fn rpc_server_accept_loop (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()> {
+	
+	let _should_wait = crossbeam_sync::WaitGroup::new ();
+	
+	loop {
 		
-		log_debug! (0x7b8fad6d, "server socket client accepted;");
+		let _socket = if let Some (_socket) = rpc_server_accept_once (_socket, _should_stop, time::Duration::from_millis (100)) ? {
+			_socket
+		} else {
+			break;
+		};
 		
 		{
 			let _should_wait = _should_wait.clone ();
@@ -104,14 +121,10 @@ pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTri
 					log_debug! (0xcd929c16, "server socket client handled;");
 				});
 		}
-		
-		log_debug! (0xbf2564c9, "server socket accepting...");
 	}
 	
-	log_debug! (0x11cbd18f, "server socket joining...");
+	log_debug! (0x11cbd18f, "server socket client joining...");
 	_should_wait.wait ();
-	
-	log_debug! (0x7c53687d, "server socket accepting finished;");
 	
 	return Ok (());
 }

@@ -35,7 +35,7 @@ pub fn main_server_listen_0 (_options : ServerListenOptions) -> Outcome<()> {
 	
 	let (mut _socket, _socket_metadata) = rpc_server_listen (_path, _path_remove) ?;
 	
-	rpc_server_accept (&mut _socket, _should_stop, server_handle) ?;
+	rpc_server_accept_loop (&mut _socket, &_should_stop, server_handle) ?;
 	
 	rpc_server_cleanup (_path, _socket, _socket_metadata) ?;
 	
