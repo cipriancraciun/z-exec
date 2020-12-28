@@ -2,6 +2,7 @@
 #![ allow (unused_imports) ]
 #![ allow (unused_macros) ]
 #![ allow (dead_code) ]
+#![ allow (macro_expanded_macro_exports_accessed_by_absolute_paths) ]
 
 
 
@@ -24,6 +25,7 @@ pub(crate) mod rpc;
 pub(crate) mod rpc_objects;
 pub(crate) mod settings;
 pub(crate) mod serialization;
+pub(crate) mod server;
 pub(crate) mod tools;
 
 
@@ -55,6 +57,7 @@ pub mod lib {
 	pub use crate::rpc_objects::*;
 	pub use crate::settings::*;
 	pub use crate::serialization::*;
+	pub use crate::server::*;
 	pub use crate::tools::*;
 }
 
