@@ -123,13 +123,13 @@ pub(crate) fn error_wrap (_code : u32, _message : impl fmt::Display, _error : im
 
 
 
-pub(crate) fn should_stop () -> sync::Arc<atomic::AtomicBool> {
+pub(crate) fn should_stop () -> SyncTrigger {
 	return SHOULD_STOP.clone ();
 }
 
 
 lazy_static::lazy_static! {
-	static ref SHOULD_STOP : sync::Arc<atomic::AtomicBool> = {
+	static ref SHOULD_STOP : SyncTrigger = {
 		let _signals = &[
 				signal_sig::SIGINT,
 				signal_sig::SIGTERM,
@@ -144,7 +144,176 @@ lazy_static::lazy_static! {
 				log_error! (0x7c1c89e8, "unexpected error encountered;  ignoring!  //  {}", _error);
 			}
 		}
-		_flag
+		SyncTrigger (_flag)
 	};
+}
+
+
+
+
+#[ derive (Clone) ]
+pub struct SyncTrigger (sync::Arc<atomic::AtomicBool>);
+
+
+impl SyncTrigger {
+	
+	pub fn new () -> Self {
+		return SyncTrigger (sync::Arc::new (atomic::AtomicBool::new (false)));
+	}
+	
+	pub fn trigger (&self) -> () {
+		self.0.store (true, atomic::Ordering::Relaxed);
+	}
+	
+	pub fn is_triggered (&self) -> bool {
+		return self.0.load (atomic::Ordering::Relaxed);
+	}
+}
+
+
+
+
+pub struct SyncBox <Value> (sync::Arc<sync::Mutex<cell::Cell<Value>>>);
+
+pub struct SyncBoxRef <'a, Value> (owning_ref::OwningRefMut<sync::MutexGuard<'a, cell::Cell<Value>>, Value>);
+
+
+impl <Value> SyncBox<Value> {
+	
+	pub fn new (_value : Value) -> Self {
+		return SyncBox (sync::Arc::new (sync::Mutex::new (cell::Cell::new (_value))));
+	}
+	
+	pub fn clone (&self) -> Self {
+		return SyncBox (sync::Arc::clone (&self.0));
+	}
+	
+	pub fn lock (&self) -> SyncBoxRef<Value> {
+		let _lock = match self.0.lock () {
+			Ok (_lock) =>
+				_lock,
+			Err (_) =>
+				panic_assertion! (0xfd80f2ca),
+		};
+		return SyncBoxRef (owning_ref::MutexGuardRefMut::new (_lock) .map_mut (cell::Cell::get_mut));
+	}
+}
+
+
+impl <'a, Value> Deref for SyncBoxRef <'a, Value> {
+	
+	type Target = Value;
+	
+	fn deref (&self) -> &Value {
+		return self.0.deref ();
+	}
+}
+
+
+impl <'a, Value> DerefMut for SyncBoxRef <'a, Value> {
+	
+	fn deref_mut (&mut self) -> &mut Value {
+		return self.0.deref_mut ();
+	}
+}
+
+
+
+#[ derive (Clone) ]
+pub struct SyncCallSender <Input, Output> {
+	invoke_sender : mpsc::SyncSender<(Input, mpsc::SyncSender<Output>)>,
+}
+
+pub struct SyncCallReceiver <Input, Output> {
+	invoke_receiver : mpsc::Receiver<(Input, mpsc::SyncSender<Output>)>,
+}
+
+pub struct SyncCallInvoke <Input, Output> {
+	pub input : Input,
+	return_sender : mpsc::SyncSender<Output>,
+}
+
+
+pub fn sync_call_new <Input, Output> () -> (SyncCallSender<Input, Output>, SyncCallReceiver<Input, Output>) {
+	let (_invoke_sender, _invoke_receiver) = mpsc::sync_channel (0);
+	return (
+			SyncCallSender {
+					invoke_sender : _invoke_sender,
+				},
+			SyncCallReceiver {
+					invoke_receiver : _invoke_receiver,
+				},
+		);
+}
+
+
+impl <Input, Output> SyncCallSender<Input, Output> {
+	
+	pub fn call (&self, _input : Input) -> Outcome<Output> {
+		let (_return_sender, _return_receiver) = mpsc::sync_channel (0);
+		match self.invoke_sender.send ((_input, _return_sender)) {
+			Ok (()) =>
+				(),
+			Err (_) =>
+				fail! (0x48ffcef9, "handler terminated!"),
+		}
+		match _return_receiver.recv () {
+			Ok (_output) =>
+				return Ok (_output),
+			Err (_) =>
+				fail! (0x3ec9dae6, "handler terminated!"),
+		}
+	}
+}
+
+
+impl <Input, Output> SyncCallReceiver<Input, Output> {
+	
+	pub fn wait (&self, _timeout : time::Duration) -> Option<SyncCallInvoke<Input, Output>> {
+		match self.invoke_receiver.recv_timeout (_timeout) {
+			Ok ((_input, _return_sender)) =>
+				return Some (SyncCallInvoke {
+						input : _input,
+						return_sender : _return_sender,
+					}),
+			Err (mpsc::RecvTimeoutError::Timeout) =>
+				return None,
+			Err (mpsc::RecvTimeoutError::Disconnected) =>
+				return None,
+		}
+	}
+}
+
+
+impl <Input, Output> SyncCallInvoke<Input, Output> {
+	
+	pub fn done (self, _output : Output) -> () {
+		match self.return_sender.send (_output) {
+			Ok (()) =>
+				(),
+			Err (_) =>
+				log_warning! (0x2668c2f3, "caller terminated;  ignoring!"),
+		}
+	}
+}
+
+
+
+
+pub fn thread_spawn <Delegate> (_name : &str, _delegate : Delegate) -> Outcome<thread::JoinHandle<Outcome<()>>>
+		where Delegate : FnOnce () -> Outcome<()> + 'static + Send + Sync
+{
+	let _builder = thread::Builder::new () .name (String::from (_name));
+	let _joiner = _builder.spawn (_delegate) ?;
+	return Ok (_joiner);
+}
+
+pub fn thread_join (_joiner : thread::JoinHandle<Outcome<()>>) -> Outcome<()> {
+	match _joiner.join () {
+		Ok (_outcome) =>
+			return _outcome,
+		Err (_error) =>
+			fail! (0xa26812e1, "thread terminated! //  {:?}", _error),
+	}
 }
 
