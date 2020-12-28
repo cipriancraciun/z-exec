@@ -8,6 +8,53 @@ use crate::prelude::*;
 pub type Outcome<Value> = Result<Value, io::Error>;
 
 
+pub trait OutcomeExt <Value> where Self : Sized {
+	
+	fn outcome (self) -> Outcome<Value>;
+	
+	fn or_panic (self, _code : u32) -> Value
+			where Self : Sized
+	{
+		match self.outcome () {
+			Ok (_value) =>
+				return _value,
+			Err (_error) =>
+				panic_wrap! (0xe676e54a, _error),
+		}
+	}
+	
+	fn or_log_error (self, _code : u32) -> Option<Value> {
+		match self.outcome () {
+			Ok (_value) =>
+				return Some (_value),
+			Err (_error) => {
+				log ("[ee]", LOG_LEVEL_ERROR, _code, _error);
+				return None;
+			}
+		}
+	}
+	
+	fn or_log_warning (self, _code : u32) -> Option<Value> {
+		match self.outcome () {
+			Ok (_value) =>
+				return Some (_value),
+			Err (_error) => {
+				log ("[ww]", LOG_LEVEL_WARNING, _code, _error);
+				return None;
+			}
+		}
+	}
+}
+
+
+impl <Value> OutcomeExt<Value> for Outcome<Value> {
+	
+	fn outcome (self) -> Self {
+		return self;
+	}
+}
+
+
 
 
 pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Display) -> () {
@@ -28,6 +75,10 @@ pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt:
 		_log_empty = false;
 		_log_cut_last = false;
 	}
+}
+
+pub(crate) fn log_error (_slug : &str, _level : u16, _code : u32, _error : impl error::Error) -> () {
+	log (_slug, _level, _code, format_args! ("unexpected error encountered!  ignoring!  //  {}", _error));
 }
 
 pub(crate) fn log_cut (_forced : bool) -> () {
