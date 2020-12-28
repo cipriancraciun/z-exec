@@ -33,7 +33,13 @@ pub fn main_server_listen_0 (_options : ServerListenOptions) -> Outcome<()> {
 	
 	let _should_stop = should_stop ();
 	
-	return rpc_server_loop (_path, _path_remove, _should_stop, server_handle);
+	let (mut _socket, _socket_metadata) = rpc_server_listen (_path, _path_remove) ?;
+	
+	rpc_server_accept (&mut _socket, _should_stop, server_handle) ?;
+	
+	rpc_server_cleanup (_path, _socket, _socket_metadata) ?;
+	
+	return Ok (());
 }
 
 

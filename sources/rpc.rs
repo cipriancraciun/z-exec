@@ -6,55 +6,77 @@ use crate::lib::*;
 
 
 
-pub fn rpc_server_loop (_path : &Path, _path_remove : bool, _should_stop : sync::Arc<atomic::AtomicBool>, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()>
-{
-	if _path.exists () {
-		if _path_remove {
-			log_warning! (0x256766df, "server socket path already exists: `{}`;  removing!", _path.display ());
-			if let Err (_error) = fs::remove_file (_path) {
-				log_error! (0x90ad8b77, "unexpected error encountered;  ignoring!  //  {}", _error);
-			}
-		} else {
-			fail! (0x9b835bb0, "server socket path already exists: `{}`;  aborting!", _path.display ());
-		}
-	}
+pub fn rpc_server_listen (_path : &Path, _path_remove : bool) -> Outcome<(socket2::Socket, fs::Metadata)> {
+	
+	log_debug! (0x788abc1f, "server socket listening...");
+	
 	if let Some (_parent) = _path.parent () {
 		if ! _parent.exists () {
-			fail! (0x07e3e056, "server socket path parent does not exist:  `{}`;  aborting!", _parent.display ());
+			fail! (0x07e3e056, "server socket path parent does not exist: `{}`;  aborting!", _parent.display ());
 		}
 	} else {
 		fail_assertion! (0x28eb84fc);
 	}
 	
+	rpc_server_socket_remove (_path, Some (_path_remove), None) ?;
+	
 	let _address = socket2::SockAddr::unix (_path) ?;
 	
-	let _should_wait = crossbeam_sync::WaitGroup::new ();
-	
+	log_debug! (0xa0daab13, "server socket creating...");
 	let mut _socket = socket2::Socket::new (
 			socket2::Domain::unix (),
 			socket2::Type::seqpacket () .cloexec (),
 			None
 		) ?;
 	
-	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) ?;
+	log_information! (0x24298d86, "server socket listening on: `{}`...", _path.display ());
 	
-	log_debug! (0x24298d86, "server socket binding on `{}`...", _path.display ());
 	_socket.bind (&_address) ?;
-	
-	log_debug! (0xf2d63f9b, "server socket listening...");
 	_socket.listen (1024) ?;
 	
-	scopeguard::defer! {
-		if let Err (_error) = fs::remove_file (_path) {
-			log_error! (0x52d37764, "unexpected error encountered;  ignoring!  //  {}", _error);
-		}
+	let _socket_metadata = fs::symlink_metadata (_path) ?;
+	if ! _socket_metadata.file_type () .is_socket () {
+		fail! (0x8f0c5694, "server socket path exists, but is not a socket: `{}`;  aborting!", _path.display ());
 	}
+	
+	log_debug! (0x41682e69, "server socket listening succeeded;");
+	
+	return Ok ((_socket, _socket_metadata));
+}
+
+
+pub fn rpc_server_cleanup (_path : &Path, _socket : socket2::Socket, _socket_metadata : fs::Metadata) -> Outcome<()> {
+	
+	log_debug! (0x54dc5a73, "server socket cleaning...");
+	
+	log_debug! (0x68e80478, "server socket unlinking from: `{}`...", _path.display ());
+	rpc_server_socket_remove (_path, None, Some (_socket_metadata)) .or_log_error (0x2696eb91);
+	
+	log_debug! (0x61bdb980, "server socket destroying...");
+	_socket.shutdown (net::Shutdown::Both) .or_log_error (0x92474573);
+	
+	drop (_socket);
+	
+	log_debug! (0xb4413093, "server socket cleaning finished;");
+	
+	return Ok (());
+}
+
+
+
+
+pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTrigger, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()> {
 	
 	log_debug! (0xbf2564c9, "server socket accepting...");
 	
+	let _should_wait = crossbeam_sync::WaitGroup::new ();
+	
+	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) ?;
+	
 	loop {
 		
-		if _should_stop.load (atomic::Ordering::Relaxed) {
+		if _should_stop.is_triggered () {
+			log_debug! (0x5d8283e8, "server socket breaking...");
 			break;
 		}
 		
@@ -66,27 +88,29 @@ pub fn rpc_server_loop (_path : &Path, _path_remove : bool, _should_stop : sync:
 					Some (nix::EAGAIN) =>
 						continue,
 					_ =>
-						fail_wrap! (0x39fa3406, "failed accepting!", _error),
+						fail_wrap! (0x39fa3406, _error),
 				}
 		};
+		
+		log_debug! (0x7b8fad6d, "server socket client accepted;");
 		
 		{
 			let _should_wait = _should_wait.clone ();
 			thread::spawn (move || {
-					if let Err (_error) = _handler (_socket) {
-						log_error! (0x4f8ecc5c, "unexpected error encountered;  ignoring!  //  {}", _error);
-					}
+					log_debug! (0x4e1ff251, "server socket client handling...");
+					_handler (_socket) .or_log_error (0x9f1efcd5);
 					drop (_should_wait);
+					log_debug! (0xcd929c16, "server socket client handled;");
 				});
 		}
 		
 		log_debug! (0xbf2564c9, "server socket accepting...");
 	}
 	
-	log_debug! (0x11cbd18f, "server threads joining...");
+	log_debug! (0x11cbd18f, "server socket joining...");
 	_should_wait.wait ();
 	
-	log_debug! (0x38ace2b8, "server exiting!");
+	log_debug! (0x7c53687d, "server socket accepting finished;");
 	
 	return Ok (());
 }
@@ -165,7 +189,7 @@ pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket)
 	//	Ok (_payload) =>
 	//		_payload,
 	//	Err (_error) =>
-	//		fail_wrap! (0x5aa2eca3, "failed decoding RPC message!", _error),
+	//		fail_wrap! (0x5aa2eca3, _error),
 	//};
 	
 	let _buffer = _buffer.into_inner ();
@@ -192,7 +216,7 @@ pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payl
 	//	Ok (()) =>
 	//		(),
 	//	Err (_error) =>
-	//		fail_wrap! (0x4c224ae4, "failed encoding RPC message!", _error),
+	//		fail_wrap! (0x4c224ae4, _error),
 	//}
 	
 	let _buffer = _buffer.into_inner ();
@@ -202,6 +226,60 @@ pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payl
 	let _sent = _socket.send (_buffer.deref ()) ?;
 	if _sent != _buffer.len () {
 		fail! (0x39a8d8cf, "failed sending RPC message (buffer truncated)!");
+	}
+	
+	return Ok (());
+}
+
+
+
+
+fn rpc_server_socket_remove (_path : &Path, _path_remove : Option<bool>, _expected_metadata : Option<fs::Metadata>) -> Outcome<()> {
+	
+	match fs::symlink_metadata (_path) {
+		
+		Ok (_path_metadata) => {
+			
+			if _path_metadata.file_type () .is_socket () {
+				
+				let _allow_remove = if let Some (_expected_metadata) = _expected_metadata {
+					if (_path_metadata.dev () == _expected_metadata.dev ()) && (_path_metadata.ino () == _expected_metadata.ino ()) {
+						true
+					} else {
+						log_warning! (0x7b0c8a32, "server socket path exists, but does not match expected: `{}`!", _path.display ());
+						false
+					}
+				} else {
+					true
+				};
+				
+				if _allow_remove && _path_remove.unwrap_or (true) {
+					
+					if _path_remove.is_some () {
+						log_warning! (0x256766df, "server socket path exists: `{}`;  removing!", _path.display ());
+					}
+					
+					fs::remove_file (_path) ?;
+					
+				} else {
+					
+					if _path_remove.is_some () {
+						fail! (0x9b835bb0, "server socket path exists: `{}`!", _path.display ());
+					}
+				}
+				
+			} else {
+				fail! (0x9b835bb0, "server socket path exists, but is not a socket: `{}`;  aborting!", _path.display ());
+			}
+		}
+		
+		Err (_error) =>
+			match _error.kind () {
+				io::ErrorKind::NotFound =>
+					log_debug! (0x22dc2d03, "server socket path does not exist: `{}`;  ignoring!", _path.display ()),
+				_ =>
+					fail_wrap! (0xfb94f36f, _error),
+			}
 	}
 	
 	return Ok (());
