@@ -22,6 +22,7 @@ signal-hook = "*"
 lazy_static = "*"
 socket2 = { version = "*", features = ["unix"] }
 bytes = "*"
+owning_ref = "*"
 
 [[bin]]
 name = "z-exec"
