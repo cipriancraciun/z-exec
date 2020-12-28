@@ -33,7 +33,7 @@ pub fn main () -> ! {
 				main_server_handle (&_arguments[2..]),
 			
 			_ =>
-				Err (error (0x8cd8f849, format! ("invalid command `{}`!", _arguments[1].to_string_lossy ()))),
+				Err (error_with_message (0x8cd8f849, format! ("invalid command `{}`!", _arguments[1].to_string_lossy ()))),
 		}
 	};
 	

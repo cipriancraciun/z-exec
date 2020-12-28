@@ -20,21 +20,22 @@ pub fn rpc_server_listen (_path : &Path, _path_remove : bool) -> Outcome<(socket
 	
 	rpc_server_socket_remove (_path, Some (_path_remove), None) ?;
 	
-	let _address = socket2::SockAddr::unix (_path) ?;
+	let _address = socket2::SockAddr::unix (_path) .or_wrap (0xa111b685) ?;
 	
 	log_debug! (0xa0daab13, "server socket creating...");
 	let mut _socket = socket2::Socket::new (
 			socket2::Domain::unix (),
 			socket2::Type::seqpacket () .cloexec (),
 			None
-		) ?;
+		)
+		.or_wrap (0x5896b56b) ?;
 	
 	log_information! (0x24298d86, "server socket listening on: `{}`...", _path.display ());
 	
-	_socket.bind (&_address) ?;
-	_socket.listen (1024) ?;
+	_socket.bind (&_address) .or_wrap (0x83df3d4e) ?;
+	_socket.listen (1024) .or_wrap (0x6b46ff64) ?;
 	
-	let _socket_metadata = fs::symlink_metadata (_path) ?;
+	let _socket_metadata = fs::symlink_metadata (_path) .or_wrap (0x5d0530e4) ?;
 	if ! _socket_metadata.file_type () .is_socket () {
 		fail! (0x8f0c5694, "server socket path exists, but is not a socket: `{}`;  aborting!", _path.display ());
 	}
@@ -71,7 +72,7 @@ pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTri
 	
 	let _should_wait = crossbeam_sync::WaitGroup::new ();
 	
-	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) ?;
+	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) .or_wrap (0x2e25e024) ?;
 	
 	loop {
 		
@@ -120,17 +121,18 @@ pub fn rpc_server_accept (_socket : &mut socket2::Socket, _should_stop : SyncTri
 
 pub fn rpc_client_connect (_path : &Path) -> Outcome<socket2::Socket> {
 	
-	let _address = socket2::SockAddr::unix (_path) ?;
+	let _address = socket2::SockAddr::unix (_path) .or_wrap (0x7a655f4f) ?;
 	
 	let mut _socket = socket2::Socket::new (
 			socket2::Domain::unix (),
 			socket2::Type::seqpacket () .cloexec (),
 			None
-		) ?;
+		)
+		.or_wrap (0x64e7a84e) ?;
 	
-	_socket.set_read_timeout (Some (time::Duration::from_millis (250))) ?;
+	_socket.set_read_timeout (Some (time::Duration::from_millis (6000))) .or_wrap (0xde8df33e) ?;
 	
-	_socket.connect (&_address) ?;
+	_socket.connect (&_address) .or_wrap (0x26157c64) ?;
 	
 	return Ok (_socket);
 }
@@ -145,7 +147,7 @@ pub fn rpc_client_call <Request : RpcRequest<Response = Response>, Response : Rp
 		RpcOutcome::Ok (_response) =>
 			return Ok (_response),
 		RpcOutcome::Err (_message) =>
-			return Err (io::Error::new (io::ErrorKind::Other, _message)),
+			return Err (error_with_message (0x24fd2ca7, _message)),
 	}
 }
 
@@ -170,7 +172,7 @@ pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket)
 	unsafe { _buffer.set_len (RPC_BUFFER_SIZE); }
 	
 	// NOTE:  We are using UNIX domain sockets of type sequence packets, thus packet boundary is solved by the OS.
-	let _received = _socket.recv (_buffer.deref_mut ()) ?;
+	let _received = _socket.recv (_buffer.deref_mut ()) .or_wrap (0x9dd4cbbb) ?;
 	if _received == 0 {
 		return Ok (None);
 	}
@@ -223,7 +225,7 @@ pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payl
 	
 	log_debug! (0xafd88ce8, "sending RPC message of {} bytes...", _buffer.len ());
 	
-	let _sent = _socket.send (_buffer.deref ()) ?;
+	let _sent = _socket.send (_buffer.deref ()) .or_wrap (0x426c08d7) ?;
 	if _sent != _buffer.len () {
 		fail! (0x39a8d8cf, "failed sending RPC message (buffer truncated)!");
 	}
@@ -259,7 +261,7 @@ fn rpc_server_socket_remove (_path : &Path, _path_remove : Option<bool>, _expect
 						log_warning! (0x256766df, "server socket path exists: `{}`;  removing!", _path.display ());
 					}
 					
-					fs::remove_file (_path) ?;
+					fs::remove_file (_path) .or_wrap (0x83250287) ?;
 					
 				} else {
 					

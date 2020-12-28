@@ -57,44 +57,44 @@ macro_rules! log_dump_cut {
 
 macro_rules! fail {
 	( $_code : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error ($_code, "unexpected error encountered!"))
+		return ::std::result::Result::Err ($crate::tools::error ($_code))
 	};
 	( $_code : expr, $_message : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error ($_code, ::std::format_args! ($_message)))
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ($_message)))
 	};
 	( $_code : expr, $_format : expr, $( $_arguments : expr ),* ) => {
-		return ::std::result::Result::Err ($crate::tools::error ($_code, ::std::format_args! ($_format, $( $_arguments ),* )))
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ($_format, $( $_arguments ),* )))
 	};
 }
 
 macro_rules! fail_wrap {
 	( $_code : expr, $_error : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_wrap ($_code, "unexpected error encountered!", $_error))
+		return ::std::result::Result::Err ($crate::tools::error_wrap ($_code, $_error))
 	};
 	( $_code : expr, $_message : expr, $_error : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_wrap ($_code, ::std::format_args! ($_message), $_error))
+		return ::std::result::Result::Err ($crate::tools::error_wrap_with_message ($_code, ::std::format_args! ($_message), $_error))
 	};
 	( $_code : expr, $_format : expr, $( $_arguments : expr, )* $_error : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_wrap ($_code, ::std::format_args! ($_format, $( $_arguments ),* ), $_error))
+		return ::std::result::Result::Err ($crate::tools::error_wrap_with_message ($_code, ::std::format_args! ($_format, $( $_arguments ),* ), $_error))
 	};
 }
 
 
 macro_rules! fail_unimplemented {
 	( $_code : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error ($_code, ::std::format_args! ("not implemented!")))
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ("not implemented!")))
 	};
 }
 
 macro_rules! fail_unreachable {
 	( $_code : expr ) => {
-		return ::std::Err ($crate::tools::error ($_code, ::std::format_args! ("unreachable assertion encountered!")))
+		return ::std::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ("unreachable assertion encountered!")))
 	};
 }
 
 macro_rules! fail_assertion {
 	( $_code : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error ($_code, ::std::format_args! ("unexpected assertion encountered!")))
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ("unexpected assertion encountered!")))
 	};
 }
 
@@ -109,7 +109,7 @@ macro_rules! panic_wrap {
 		if true {
 			::std::process::exit (2);
 		}
-		::std::panic! ($crate::tools::error ($_code, ::std::format_args! ("unexpected error encountered!")));
+		::std::panic! ($crate::tools::error_with_message ($_code, ::std::format_args! ("unexpected error encountered!")));
 	} };
 }
 
@@ -121,7 +121,7 @@ macro_rules! panic_unreachable {
 		if true {
 			::std::process::exit (2);
 		}
-		::std::panic! ($crate::tools::error ($_code, ::std::format_args! ("unreachable assertion encountered!")));
+		::std::panic! ($crate::tools::error_with_message ($_code, ::std::format_args! ("unreachable assertion encountered!")));
 	} };
 }
 
@@ -132,7 +132,7 @@ macro_rules! panic_assertion {
 		if true {
 			::std::process::exit (2);
 		}
-		::std::panic! ($crate::tools::error ($_code, ::std::format_args! ("unexpected assertion encountered!")));
+		::std::panic! ($crate::tools::error_with_message ($_code, ::std::format_args! ("unexpected assertion encountered!")));
 	} };
 }
 

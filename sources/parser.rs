@@ -220,8 +220,8 @@ impl DumpOptions {
 		}
 		return self.dump_0 (
 				|_output| {
-					write! (_output, "{:#?}", _object) ?;
-					write! (_output, "\n") ?;
+					write! (_output, "{:#?}", _object) .or_wrap (0x7a302e72) ?;
+					write! (_output, "\n") .or_wrap (0xab13dd38) ?;
 					Ok (())
 				},
 				_output);
@@ -234,7 +234,7 @@ impl DumpOptions {
 		return self.dump_0 (
 				|mut _output| {
 					_object.ron_into_stream (&mut _output, true) ?;
-					write! (_output, "\n") ?;
+					write! (_output, "\n") .or_wrap (0x590c0593) ?;
 					Ok (())
 				},
 				_output);
@@ -247,7 +247,7 @@ impl DumpOptions {
 		return self.dump_0 (
 				|mut _output| {
 					_object.json_into_stream (&mut _output, true) ?;
-					write! (_output, "\n") ?;
+					write! (_output, "\n") .or_wrap (0xec74a19c) ?;
 					Ok (())
 				},
 				_output);
@@ -258,12 +258,12 @@ impl DumpOptions {
 	{
 		if let Some (_output) = _output {
 			_delegate (_output) ?;
-			_output.flush () ?;
+			_output.flush () .or_wrap (0x67829793) ?;
 		} else {
 			let mut _output = io::stdout ();
 			let mut _output = _output.lock ();
 			_delegate (&mut _output) ?;
-			_output.flush () ?;
+			_output.flush () .or_wrap (0x02fc46f8) ?;
 		}
 		return Ok (());
 	}
@@ -306,7 +306,7 @@ pub fn parser_execute (_parser : &argparse::ArgumentParser, _command : &str, _ar
 			fail! (0xdc46fc60, "exiting ({})!", _code),
 	}
 	
-	_stderr_2.flush () ?;
+	_stderr_2.flush () .or_wrap (0x76d6d080) ?;
 	
 	return Ok (());
 }

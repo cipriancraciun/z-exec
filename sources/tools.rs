@@ -5,17 +5,63 @@ use crate::prelude::*;
 
 
 
-pub type Outcome<Value> = Result<Value, io::Error>;
+pub type Outcome<Value> = Result<Value, Error>;
 
 
-pub trait OutcomeExt <Value> where Self : Sized {
+
+
+pub struct Error (io::Error);
+
+
+impl error::Error for Error {}
+
+
+impl fmt::Debug for Error {
 	
-	fn outcome (self) -> Outcome<Value>;
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return self.0.fmt (_formatter);
+	}
+}
+
+
+impl fmt::Display for Error {
 	
-	fn or_panic (self, _code : u32) -> Value
-			where Self : Sized
-	{
-		match self.outcome () {
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return self.0.fmt (_formatter);
+	}
+}
+
+
+
+
+pub trait ResultExtWrap<Value> {
+	
+	fn or_wrap (self, _code : u32) -> Outcome<Value>;
+}
+
+
+impl <Value, Error : ErrorExtWrap> ResultExtWrap<Value> for Result<Value, Error> {
+	
+	fn or_wrap (self, _code : u32) -> Outcome<Value> {
+		match self {
+			Ok (_value) =>
+				return Ok (_value),
+			Err (_error) =>
+				return Err (_error.wrap (_code)),
+		}
+	}
+}
+
+
+
+
+pub trait ResultExtLog<Value, Error : error::Error>
+		where Self : Sized
+{
+	fn result (self) -> Result<Value, Error>;
+	
+	fn or_panic (self, _code : u32) -> Value {
+		match self.result () {
 			Ok (_value) =>
 				return _value,
 			Err (_error) =>
@@ -24,7 +70,7 @@ pub trait OutcomeExt <Value> where Self : Sized {
 	}
 	
 	fn or_log_error (self, _code : u32) -> Option<Value> {
-		match self.outcome () {
+		match self.result () {
 			Ok (_value) =>
 				return Some (_value),
 			Err (_error) => {
@@ -35,7 +81,7 @@ pub trait OutcomeExt <Value> where Self : Sized {
 	}
 	
 	fn or_log_warning (self, _code : u32) -> Option<Value> {
-		match self.outcome () {
+		match self.result () {
 			Ok (_value) =>
 				return Some (_value),
 			Err (_error) => {
@@ -47,10 +93,26 @@ pub trait OutcomeExt <Value> where Self : Sized {
 }
 
 
-impl <Value> OutcomeExt<Value> for Outcome<Value> {
+impl <Value, Error : error::Error> ResultExtLog<Value, Error> for Result<Value, Error> {
 	
-	fn outcome (self) -> Self {
+	fn result (self) -> Self {
 		return self;
+	}
+}
+
+
+
+
+pub trait ErrorExtWrap {
+	
+	fn wrap (self, _code : u32) -> Error;
+}
+
+
+impl ErrorExtWrap for io::Error {
+	
+	fn wrap (self, _code : u32) -> Error {
+		return error_wrap (_code, self);
 	}
 }
 
@@ -105,19 +167,33 @@ static mut _log_cut_last : bool = false;
 
 
 
-pub(crate) fn error (_code : u32, _message : impl fmt::Display) -> io::Error {
+pub(crate) fn error (_code : u32) -> Error {
+	
+	let _message = format! ("[{:08x}]  unexpected error encountered!", _code);
+	
+	return Error (io::Error::new (io::ErrorKind::Other, _message))
+}
+
+pub(crate) fn error_with_message (_code : u32, _message : impl fmt::Display) -> Error {
 	
 	let _message = format! ("[{:08x}]  {}", _code, _message);
 	
-	io::Error::new (io::ErrorKind::Other, _message)
+	return Error (io::Error::new (io::ErrorKind::Other, _message))
 }
 
 
-pub(crate) fn error_wrap (_code : u32, _message : impl fmt::Display, _error : impl error::Error) -> io::Error {
+pub(crate) fn error_wrap (_code : u32, _error : impl error::Error) -> Error {
+	
+	let _message = format! ("[{:08x}]  unexpected error encountered!  //  {}", _code, _error);
+	
+	return Error (io::Error::new (io::ErrorKind::Other, _message))
+}
+
+pub(crate) fn error_wrap_with_message (_code : u32, _message : impl fmt::Display, _error : impl error::Error) -> Error {
 	
 	let _message = format! ("[{:08x}]  {}  //  {}", _code, _message, _error);
 	
-	io::Error::new (io::ErrorKind::Other, _message)
+	return Error (io::Error::new (io::ErrorKind::Other, _message))
 }
 
 
@@ -140,9 +216,7 @@ lazy_static::lazy_static! {
 			];
 		let _flag = sync::Arc::new (atomic::AtomicBool::new (false));
 		for &_signal in _signals {
-			if let Err (_error) = signal_flag::register (_signal, _flag.clone ()) {
-				log_error! (0x7c1c89e8, "unexpected error encountered;  ignoring!  //  {}", _error);
-			}
+			signal_flag::register (_signal, _flag.clone ()) .or_log_error (0xf970b50e);
 		}
 		SyncTrigger (_flag)
 	};
@@ -304,7 +378,7 @@ pub fn thread_spawn <Delegate> (_name : &str, _delegate : Delegate) -> Outcome<t
 		where Delegate : FnOnce () -> Outcome<()> + 'static + Send + Sync
 {
 	let _builder = thread::Builder::new () .name (String::from (_name));
-	let _joiner = _builder.spawn (_delegate) ?;
+	let _joiner = _builder.spawn (_delegate) .or_wrap (0x33fb9a81) ?;
 	return Ok (_joiner);
 }
 

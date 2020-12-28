@@ -57,7 +57,7 @@ pub fn main_execute_from (_arguments : &[OsString]) -> Outcome<()> {
 	
 	let mut _stdin = io::stdin ();
 	let _load_stream : Box<dyn io::Read> = if let Some (_load_path) = _load_path {
-		Box::new (fs::File::open (_load_path) ?)
+		Box::new (fs::File::open (_load_path) .or_wrap (0x90d0db16) ?)
 	} else if let Some (_load_fd) = _load_fd {
 		Box::new (unsafe { fs::File::from_raw_fd (_load_fd as io_unix::RawFd) })
 	} else {
