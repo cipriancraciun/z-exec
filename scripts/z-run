@@ -125,7 +125,7 @@
 <<== do / examples / generate
 	#! <template>
 	
-	{{ $_examples := array "true" "env" }}
+	{{ $_examples := array "true" "env" "lsof" }}
 	{{ $_actions := array "dump" "exec" }}
 	
 	{{ range $_, $_action := $_actions }}
