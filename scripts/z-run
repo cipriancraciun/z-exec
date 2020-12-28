@@ -86,6 +86,9 @@
 
 :: do / execute :: exec -- "${ZRUN[@]}" ':: do' execute "${@}"
 :: do / execute-from :: exec -- "${ZRUN[@]}" ':: do' execute-from "${@}"
+
+:: do / client / execute :: exec -- "${ZRUN[@]}" ':: do' execute --unix-path /tmp/z-exec.socket "${@}"
+:: do / client / execute-from :: exec -- "${ZRUN[@]}" ':: do' execute-from --unix-path /tmp/z-exec.socket "${@}"
 :: do / server :: exec -- "${ZRUN[@]}" ':: do' server --unix-path /tmp/z-exec.socket "${@}"
 
 
@@ -93,7 +96,7 @@
 
 --<< do / examples / exec / __
 	
-	test "${#}" -eq 1
+	test "${#}" -ge 1
 	_example="${1}"
 	shift -- 1
 	
@@ -102,6 +105,7 @@
 	exec -- "${ZRUN[@]}" ':: do' execute-from \
 			--from-file "${_source}" \
 			--json \
+			"${@}" \
 	#
 !!
 
@@ -125,7 +129,7 @@
 <<== do / examples / generate
 	#! <template>
 	
-	{{ $_examples := array "true" "env" "lsof" }}
+	{{ $_examples := array "true" "hello" "env" "lsof" }}
 	{{ $_actions := array "dump" "exec" }}
 	
 	{{ range $_, $_action := $_actions }}

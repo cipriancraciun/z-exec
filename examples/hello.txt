@@ -1,0 +1,24 @@
+ProcessDescriptor {
+    command: CommandDescriptor {
+        executable: StringDescriptor(
+            "printf",
+        ),
+        argument0: None,
+        arguments: Some(
+            [
+                StringDescriptor(
+                    "[%08x]  %s\n",
+                ),
+                StringDescriptor(
+                    "0x07c17161",
+                ),
+                StringDescriptor(
+                    "hello!",
+                ),
+            ],
+        ),
+    },
+    environment: None,
+    directory: None,
+    stdio: None,
+}

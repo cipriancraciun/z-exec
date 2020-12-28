@@ -2,8 +2,5 @@
 	"command" : {
 		"executable" : "lsof",
 		"arguments" : ["-c", "lsof"]
-	},
-	"environment" : {
-		"inherit" : false
 	}
 }

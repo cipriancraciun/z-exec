@@ -1,0 +1,10 @@
+{
+	"command" : {
+		"executable" : "printf",
+		"arguments" : [
+			"[%08x]  %s\n",
+			"0x07c17161",
+			"hello!"
+		]
+	}
+}
