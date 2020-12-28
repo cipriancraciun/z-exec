@@ -11,6 +11,7 @@ pub(crate) const DUMP_LOG_VERBOSE : bool = DUMP_VERBOSE || false;
 pub(crate) const DUMP_LOG_LEVEL : u16 = if DUMP_LOG_VERBOSE { LOG_LEVEL_DEBUG } else { LOG_LEVEL_NOTICE };
 pub(crate) const DUMP_LOG_CUT : bool = DUMP_LOG_VERBOSE || (DUMP_LOG_LEVEL <= LOG_LEVEL_DEBUG) || false;
 
+pub(crate) const LOG_LEVEL_PANIC : u16 = u16::max_value ();
 pub(crate) const LOG_LEVEL_ERROR : u16 = 60_000;
 pub(crate) const LOG_LEVEL_WARNING : u16 = 50_000;
 pub(crate) const LOG_LEVEL_NOTICE : u16 = 40_000;
