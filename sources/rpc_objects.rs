@@ -91,7 +91,7 @@ serializable! (RpcExecuteRequest : Serializable);
 #[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub struct RpcExecuteResponse {
-	pub pid : libc::pid_t,
+	pub identifier : Identifier,
 }
 
 impl RpcResponse for RpcExecuteResponse {}

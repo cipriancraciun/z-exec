@@ -16,17 +16,19 @@ pub struct Server {
 
 struct ServerState {
 	
+	processes : HashMap<Identifier, SyncBox<ProcessState>>,
+	processes_by_pid : HashMap<ProcessId, Identifier>,
 }
 
 
-pub struct ServerContext {
+struct ServerContext {
 	
 	handler_sender : SyncCallSender<RpcRequestWrapper, RpcOutcomeBox>,
-	spawner_sender : SyncCallSender<(), Outcome<()>>,
+	spawner_sender : SyncCallSender<ProcessDescriptor, Outcome<SyncBox<ProcessState>>>,
 }
 
 
-pub struct ServerThreads {
+struct ServerThreads {
 	
 	accepter_thread : thread::JoinHandle<Outcome>,
 	handler_thread : thread::JoinHandle<Outcome>,
@@ -35,6 +37,14 @@ pub struct ServerThreads {
 	
 	stopper : SyncTrigger,
 	waiter : crossbeam_sync::WaitGroup,
+}
+
+
+struct ProcessState {
+	
+	identifier : Identifier,
+	pid : ProcessId,
+	outcome : Option<ProcessOutcome>,
 }
 
 
@@ -89,7 +99,10 @@ impl Server {
 				spawner_sender : _spawner_sender,
 			};
 		
-		let _state = ServerState {};
+		let _state = ServerState {
+				processes : HashMap::with_capacity (1024),
+				processes_by_pid : HashMap::with_capacity (1024),
+			};
 		
 		let _context = SyncBox::new (_context);
 		let _state = SyncBox::new (_state);
@@ -253,6 +266,7 @@ fn server_client_loop (_self : ThreadState, _socket : socket2::Socket) -> Outcom
 fn server_handler_loop (_self : ThreadState, _receiver : SyncCallReceiver<RpcRequestWrapper, RpcOutcomeBox>) -> Outcome {
 	
 	log_debug! (0x1dff9571, "server handler started;");
+	let _spawner_sender = _self.context.lock () .spawner_sender.clone ();
 	
 	loop {
 		
@@ -260,26 +274,28 @@ fn server_handler_loop (_self : ThreadState, _receiver : SyncCallReceiver<RpcReq
 			break;
 		}
 		
-		let _call = if let Some (_call) = _receiver.wait (time::Duration::from_millis (100)) {
+		let (_request, _callback) = if let Some (_call) = _receiver.wait (time::Duration::from_millis (100)) {
 			_call
 		} else {
 			continue;
 		};
 		
-		let _request = &_call.input;
-		
 		let _response = match _request {
 			
 			RpcRequestWrapper::Execute (_request) =>
-				match spawn (&_request.descriptor, Some (env::vars_os ())) {
-					Ok (_pid) =>
-						RpcOutcome::Ok (RpcExecuteResponse { pid : _pid }) .into_boxed (),
+				match _spawner_sender.call (_request.descriptor) {
+					Ok (Ok (mut _process)) => {
+						let _identifier = _process.lock () .identifier.clone ();
+						RpcOutcome::Ok (RpcExecuteResponse { identifier : _identifier }) .into_boxed ()
+					},
+					Ok (Err (_error)) =>
+						RpcOutcomeBox::Err (_error.to_string ()),
 					Err (_error) =>
 						RpcOutcomeBox::Err (_error.to_string ()),
 				}
 		};
 		
-		_call.done (_response);
+		_callback.done (_response);
 	}
 	
 	log_debug! (0xe30fa44b, "server handler finished;");
@@ -290,7 +306,7 @@ fn server_handler_loop (_self : ThreadState, _receiver : SyncCallReceiver<RpcReq
 
 
 
-fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<(), Outcome<()>>) -> Outcome {
+fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<ProcessDescriptor, Outcome<SyncBox<ProcessState>>>) -> Outcome {
 	
 	log_debug! (0x081220f3, "server spawner started;");
 	
@@ -300,7 +316,41 @@ fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<(), Ou
 			break;
 		}
 		
-		_self.sleep ();
+		let (_descriptor, _callback) = if let Some (_call) = _receiver.wait (time::Duration::from_millis (100)) {
+			_call
+		} else {
+			continue;
+		};
+		
+		let _identifier = Identifier::new ();
+		
+		log_debug! (0xfea575bc, "server spawning process `{}`...", _identifier);
+		
+		let _pid = match process_spawn (&_descriptor, Some (env::vars_os ())) {
+			Ok (_pid) =>
+				_pid,
+			Err (_error) => {
+				_error.log_error (0x1ae5debe);
+				_callback.failed (_error);
+				continue;
+			}
+		};
+		
+		log_information! (0x9b169fe3, "server spawned process `{}` with pid `{}`;", _identifier, _pid);
+		
+		let _process = ProcessState {
+				identifier : _identifier.clone (),
+				pid : _pid,
+				outcome : None,
+			};
+		
+		let _process = SyncBox::new (_process);
+		
+		let mut _state = _self.state.lock ();
+		_state.processes.insert (_identifier.clone (), _process.clone ()) .panic_if_some (0xb63f76e2);
+		_state.processes_by_pid.insert (_pid, _identifier.clone ()) .panic_if_some (0x039ff515);
+		
+		_callback.succeeded (_process);
 	}
 	
 	log_debug! (0x5dedfb34, "server spawner finished;");
@@ -321,7 +371,39 @@ fn server_ripper_loop (_self : ThreadState) -> Outcome {
 			break;
 		}
 		
-		_self.sleep ();
+		let (_pid, _outcome) = match process_wait () {
+			Ok (Some ((_pid, _outcome))) =>
+				(_pid, _outcome),
+			Ok (None) => {
+				_self.sleep ();
+				continue;
+			},
+			Err (_error) => {
+				_error.log_error (0x4f904e87);
+				_self.sleep ();
+				continue;
+			}
+		};
+		
+		log_debug! (0x62720704, "server ripping process with pid `{}`...", _pid);
+		
+		let mut _state = _self.state.lock ();
+		
+		let _identifier = match _state.processes_by_pid.remove (&_pid) {
+			Some (_identifier) =>
+				_identifier,
+			None => {
+				log_warning! (0xb66deffa, "server ripped unknown process with pid `{}`;  ignoring!", _pid);
+				continue;
+			}
+		};
+		
+		let _process = _state.processes.get (&_identifier) .or_panic (0xf858f41e);
+		
+		let mut _process = _process.lock ();
+		_process.outcome = Some (_outcome);
+		
+		log_information! (0xd3e3e877, "server ripped process `{}` with pid `{}`;", _identifier, _pid);
 	}
 	
 	log_debug! (0xf9a05bd1, "server ripper finished;");
