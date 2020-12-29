@@ -5,7 +5,9 @@ use crate::prelude::*;
 
 
 
-pub type Outcome<Value> = Result<Value, Error>;
+pub type Outcome<Value = ()> = Result<Value, Error>;
+
+pub const OK : Outcome<()> = Ok (());
 
 
 
@@ -55,54 +57,6 @@ impl <Value, Error : ErrorExtWrap> ResultExtWrap<Value> for Result<Value, Error>
 
 
 
-pub trait ResultExtLog<Value, Error : error::Error>
-		where Self : Sized
-{
-	fn result (self) -> Result<Value, Error>;
-	
-	fn or_panic (self, _code : u32) -> Value {
-		match self.result () {
-			Ok (_value) =>
-				return _value,
-			Err (_error) =>
-				panic_wrap! (0xe676e54a, _error),
-		}
-	}
-	
-	fn or_log_error (self, _code : u32) -> Option<Value> {
-		match self.result () {
-			Ok (_value) =>
-				return Some (_value),
-			Err (_error) => {
-				log ("[ee]", LOG_LEVEL_ERROR, _code, _error);
-				return None;
-			}
-		}
-	}
-	
-	fn or_log_warning (self, _code : u32) -> Option<Value> {
-		match self.result () {
-			Ok (_value) =>
-				return Some (_value),
-			Err (_error) => {
-				log ("[ww]", LOG_LEVEL_WARNING, _code, _error);
-				return None;
-			}
-		}
-	}
-}
-
-
-impl <Value, Error : error::Error> ResultExtLog<Value, Error> for Result<Value, Error> {
-	
-	fn result (self) -> Self {
-		return self;
-	}
-}
-
-
-
-
 pub trait ErrorExtWrap {
 	
 	fn wrap (self, _code : u32) -> Error;
@@ -115,6 +69,76 @@ impl ErrorExtWrap for io::Error {
 		return error_wrap (_code, self);
 	}
 }
+
+
+
+
+pub trait ResultExtLog<Value, Error : ErrorExtLog>
+		where Self : Sized
+{
+	fn result (self) -> Result<Value, Error>;
+	
+	fn or_panic (self, _code : u32) -> Value {
+		match self.result () {
+			Ok (_value) =>
+				return _value,
+			Err (_error) =>
+				_error.panic (_code),
+		}
+	}
+	
+	fn or_log_error (self, _code : u32) -> Option<Value> {
+		match self.result () {
+			Ok (_value) =>
+				return Some (_value),
+			Err (_error) => {
+				_error.log_error (_code);
+				return None;
+			}
+		}
+	}
+	
+	fn or_log_warning (self, _code : u32) -> Option<Value> {
+		match self.result () {
+			Ok (_value) =>
+				return Some (_value),
+			Err (_error) => {
+				_error.log_warning (_code);
+				return None;
+			}
+		}
+	}
+}
+
+
+impl <Value, Error : ErrorExtLog> ResultExtLog<Value, Error> for Result<Value, Error> {
+	
+	fn result (self) -> Self {
+		return self;
+	}
+}
+
+
+
+
+pub trait ErrorExtLog
+		where Self : error::Error + Sized
+{
+	fn panic (self, _code : u32) -> ! {
+		panic_wrap! (0xe676e54a, self);
+	}
+	
+	fn log_error (self, _code : u32) -> () {
+		log ("[ee]", LOG_LEVEL_ERROR, _code, self);
+	}
+	
+	fn log_warning (self, _code : u32) -> () {
+		log ("[ww]", LOG_LEVEL_WARNING, _code, self);
+	}
+}
+
+
+impl <Error : error::Error> ErrorExtLog for Error {}
 
 
 
@@ -225,7 +249,6 @@ lazy_static::lazy_static! {
 
 
 
-#[ derive (Clone) ]
 pub struct SyncTrigger (sync::Arc<atomic::AtomicBool>);
 
 
@@ -233,6 +256,10 @@ impl SyncTrigger {
 	
 	pub fn new () -> Self {
 		return SyncTrigger (sync::Arc::new (atomic::AtomicBool::new (false)));
+	}
+	
+	pub fn clone (&self) -> Self {
+		return SyncTrigger (self.0.clone ());
 	}
 	
 	pub fn trigger (&self) -> () {
@@ -293,7 +320,6 @@ impl <'a, Value> DerefMut for SyncBoxRef <'a, Value> {
 
 
 
-#[ derive (Clone) ]
 pub struct SyncCallSender <Input, Output> {
 	invoke_sender : mpsc::SyncSender<(Input, mpsc::SyncSender<Output>)>,
 }
@@ -322,6 +348,12 @@ pub fn sync_call_new <Input, Output> () -> (SyncCallSender<Input, Output>, SyncC
 
 
 impl <Input, Output> SyncCallSender<Input, Output> {
+	
+	pub fn clone (&self) -> Self {
+		return SyncCallSender {
+				invoke_sender : self.invoke_sender.clone ()
+			};
+	}
 	
 	pub fn call (&self, _input : Input) -> Outcome<Output> {
 		let (_return_sender, _return_receiver) = mpsc::sync_channel (0);
@@ -375,7 +407,7 @@ impl <Input, Output> SyncCallInvoke<Input, Output> {
 
 
 pub fn thread_spawn <Delegate> (_name : &str, _delegate : Delegate) -> Outcome<thread::JoinHandle<Outcome<()>>>
-		where Delegate : FnOnce () -> Outcome<()> + 'static + Send + Sync
+		where Delegate : FnOnce () -> Outcome<()> + Send + 'static
 {
 	let _builder = thread::Builder::new () .name (String::from (_name));
 	let _joiner = _builder.spawn (_delegate) .or_wrap (0x33fb9a81) ?;
