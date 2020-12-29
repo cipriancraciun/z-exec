@@ -32,7 +32,7 @@ pub fn main_client_0 (_descriptor : ProcessDescriptor, _socket : &mut socket2::S
 	
 	let _response = rpc_client_call (_socket, _request, None) ?;
 	
-	log_notice! (0x0f4a112f, "spawned process with PID `{}`!", _response.pid);
+	log_notice! (0x0f4a112f, "spawned process with identifier `{}`!", _response.identifier);
 	
 	return Ok (());
 }

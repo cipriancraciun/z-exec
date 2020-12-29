@@ -99,7 +99,7 @@ pub fn main_execute_0 (_descriptor : ProcessDescriptor, _connect : ServerConnect
 		return main_client_1 (_descriptor, _connect);
 	}
 	
-	execute (&_descriptor, Some (env::vars_os ())) ?;
+	process_execute (&_descriptor, Some (env::vars_os ())) ?;
 	fail_assertion! (0x117f5a07);
 }
 
