@@ -24,6 +24,7 @@ lazy_static = "*"
 socket2 = { version = "*", features = ["unix"] }
 bytes = "*"
 owning_ref = "*"
+uuid = { version = "*", features = ["v4"] }
 
 [[bin]]
 name = "z-exec"
