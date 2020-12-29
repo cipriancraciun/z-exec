@@ -163,44 +163,82 @@ macro_rules! unimplemented {
 #[ macro_export ]
 macro_rules! serializable {
 	
+	
 	( $name : ident : Serializable ) => {
 		impl $crate::serialization::Serializable for $name {}
-		impl $crate::serialization::SerializableJson for $name {}
-		impl $crate::serialization::DeserializableJson for $name {}
-		impl $crate::serialization::SerializableRon for $name {}
-		impl $crate::serialization::DeserializableRon for $name {}
+		serializable! ($name : SerializableErased);
+		serializable! ($name : SerializableOnly);
+		serializable! ($name : DeserializableOnly);
+	};
+	
+	( $name : ident : SerializableErased ) => {
+		impl $crate::serialization::SerializableErased for $name {}
 	};
 	
 	( $name : ident : SerializableOnly ) => {
 		impl $crate::serialization::SerializableOnly for $name {}
 		impl $crate::serialization::SerializableJson for $name {}
 		impl $crate::serialization::SerializableRon for $name {}
+		impl $crate::serialization::SerializableRaw for $name {}
 	};
 	
 	( $name : ident : DeserializableOnly ) => {
 		impl $crate::serialization::DeserializableOnly for $name {}
 		impl $crate::serialization::DeserializableJson for $name {}
 		impl $crate::serialization::DeserializableRon for $name {}
+		impl $crate::serialization::DeserializableRaw for $name {}
 	};
+	
 	
 	( $name : ident <$type : ident> : Serializable ) => {
 		impl <$type : $crate::serialization::Serializable> $crate::serialization::Serializable for $name <$type> {}
-		impl <$type : $crate::serialization::SerializableJson> $crate::serialization::SerializableJson for $name <$type> {}
-		impl <$type : $crate::serialization::DeserializableJson> $crate::serialization::DeserializableJson for $name <$type> {}
-		impl <$type : $crate::serialization::SerializableRon> $crate::serialization::SerializableRon for $name <$type> {}
-		impl <$type : $crate::serialization::DeserializableRon> $crate::serialization::DeserializableRon for $name <$type> {}
+		serializable! ($name<$type> : SerializableErased);
+		serializable! ($name<$type> : SerializableOnly);
+		serializable! ($name<$type> : DeserializableOnly);
+	};
+	
+	( $name : ident <$type : ident> : SerializableErased ) => {
+		impl <$type : ::erased_serde::Serialize> $crate::serialization::SerializableErased for $name <$type> {}
 	};
 	
 	( $name : ident <$type : ident> : SerializableOnly ) => {
-		impl <$type : $crate::serialization::SerializableOnly> $crate::serialization::SerializableOnly for $name <$type> {}
-		impl <$type : $crate::serialization::SerializableJson> $crate::serialization::SerializableJson for $name <$type> {}
-		impl <$type : $crate::serialization::SerializableRon> $crate::serialization::SerializableRon for $name <$type> {}
+		impl <$type : ::serde::Serialize> $crate::serialization::SerializableOnly for $name <$type> {}
+		impl <$type : ::serde::Serialize> $crate::serialization::SerializableJson for $name <$type> {}
+		impl <$type : ::serde::Serialize> $crate::serialization::SerializableRon for $name <$type> {}
+		impl <$type : ::serde::Serialize> $crate::serialization::SerializableRaw for $name <$type> {}
 	};
 	
 	( $name : ident <$type : ident> : DeserializableOnly ) => {
-		impl <$type : $crate::serialization::DeserializableOnly> $crate::serialization::DeserializableOnly for $name <$type> {}
-		impl <$type : $crate::serialization::DeserializableJson> $crate::serialization::DeserializableJson for $name <$type> {}
-		impl <$type : $crate::serialization::DeserializableRon> $crate::serialization::DeserializableRon for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned> $crate::serialization::DeserializableOnly for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned> $crate::serialization::DeserializableJson for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned> $crate::serialization::DeserializableRon for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned> $crate::serialization::DeserializableRaw for $name <$type> {}
+	};
+	
+	
+	( $name : ident <$type : ident : $type_constraint : path> : Serializable ) => {
+		impl <$type : ::serde::Serialize + ::serde::de::DeserializeOwned + $type_constraint> $crate::serialization::Serializable for $name <$type> {}
+		serializable! ($name<$type : $type_constraint> : SerializableErased);
+		serializable! ($name<$type : $type_constraint> : SerializableOnly);
+		serializable! ($name<$type : $type_constraint> : DeserializableOnly);
+	};
+	
+	( $name : ident <$type : ident : $type_constraint : path> : SerializableErased ) => {
+		impl <$type : ::erased_serde::Serialize + $type_constraint> $crate::serialization::SerializableErased for $name <$type> {}
+	};
+	
+	( $name : ident <$type : ident : $type_constraint : path> : SerializableOnly ) => {
+		impl <$type : ::serde::Serialize + $type_constraint> $crate::serialization::SerializableOnly for $name <$type> {}
+		impl <$type : ::serde::Serialize + $type_constraint> $crate::serialization::SerializableJson for $name <$type> {}
+		impl <$type : ::serde::Serialize + $type_constraint> $crate::serialization::SerializableRon for $name <$type> {}
+		impl <$type : ::serde::Serialize + $type_constraint> $crate::serialization::SerializableRaw for $name <$type> {}
+	};
+	
+	( $name : ident <$type : ident : $type_constraint : path> : DeserializableOnly ) => {
+		impl <$type : ::serde::de::DeserializeOwned + $type_constraint> $crate::serialization::DeserializableOnly for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned + $type_constraint> $crate::serialization::DeserializableJson for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned + $type_constraint> $crate::serialization::DeserializableRon for $name <$type> {}
+		impl <$type : ::serde::de::DeserializeOwned + $type_constraint> $crate::serialization::DeserializableRaw for $name <$type> {}
 	};
 }
 
