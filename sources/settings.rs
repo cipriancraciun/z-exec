@@ -18,6 +18,7 @@ pub(crate) const LOG_LEVEL_NOTICE : u16 = 40_000;
 pub(crate) const LOG_LEVEL_INFORMATION : u16 = 30_000;
 pub(crate) const LOG_LEVEL_DEBUG : u16 = 20_000;
 pub(crate) const LOG_LEVEL_TRACE : u16 = 10_000;
+pub(crate) const LOG_LEVEL_DUMP : u16 = u16::min_value ();
 
 
 pub(crate) const TEMPFILE_PREFIX : &str = ".z-exec.";
