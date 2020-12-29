@@ -12,6 +12,7 @@ default = []
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
+erased-serde = "*"
 ron = "*"
 libc = "*"
 nix = "*"

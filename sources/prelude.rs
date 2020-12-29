@@ -16,6 +16,7 @@ pub(crate) use ::serde;
 pub(crate) use ::serde_derive;
 pub(crate) use ::serde_json;
 pub(crate) use ::ron as serde_ron;
+pub(crate) use ::erased_serde as serde_erased;
 
 pub(crate) use ::libc;
 pub(crate) use ::socket2;
