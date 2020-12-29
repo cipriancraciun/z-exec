@@ -6,15 +6,15 @@ use crate::lib::*;
 
 
 
-pub fn execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<()> {
+pub fn process_execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<()> {
 	
 	let _command = &_descriptor.command;
 	
 //	close_all_fd () ?;
 	
 	let _executable = convert_osstr_to_cstring (&_command.executable.as_ref ()) ?;
-	let _arguments = build_arguments (&_descriptor.command) ?;
-	let _environment = build_environment (_descriptor.environment.as_ref (), _environment) ?;
+	let _arguments = process_build_arguments (&_descriptor.command) ?;
+	let _environment = process_build_environment (_descriptor.environment.as_ref (), _environment) ?;
 	
 	match nix::execvpe (&_executable, &_arguments, &_environment) {
 		Ok (_) =>
@@ -25,15 +25,17 @@ pub fn execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Ite
 }
 
 
-pub fn spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<libc::pid_t> {
+
+
+pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<ProcessId> {
 	
 	match unsafe { nix::fork () } {
 		
 		Ok (nix::ForkResult::Parent { child : _child, .. }) =>
-			return Ok (_child.as_raw ()),
+			return Ok (ProcessId::from_raw (_child.as_raw ())),
 		
 		Ok (nix::ForkResult::Child) => {
-			match execute (_descriptor, _environment) {
+			match process_execute (_descriptor, _environment) {
 				Ok (_) =>
 					fail_assertion! (0x32933043),
 				Err (_error) => {
@@ -51,7 +53,7 @@ pub fn spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Itera
 
 
 
-pub fn build_arguments (_descriptor : &CommandDescriptor) -> Outcome<Vec<CString>> {
+pub fn process_build_arguments (_descriptor : &CommandDescriptor) -> Outcome<Vec<CString>> {
 	
 	let _argument0 = if let Some (_argument0) = &_descriptor.argument0 {
 		convert_osstr_to_cstring (_argument0) ?
@@ -74,7 +76,7 @@ pub fn build_arguments (_descriptor : &CommandDescriptor) -> Outcome<Vec<CString
 
 
 
-pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherited : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<Vec<CString>> {
+pub fn process_build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherited : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<Vec<CString>> {
 	
 	static DESCRIPTOR_FALLBACK : EnvironmentDescriptor = EnvironmentDescriptor {
 			inherit : true,
@@ -148,7 +150,7 @@ pub fn build_environment (_descriptor : Option<&EnvironmentDescriptor>, _inherit
 
 
 
-pub fn close_all_fd () -> Outcome<()> {
+pub fn process_close_all_fd () -> Outcome<()> {
 	
 	let _limit : io_unix::RawFd = unsafe {
 		let _limit = libc::getdtablesize ();
