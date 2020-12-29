@@ -144,18 +144,20 @@ impl <Error : error::Error> ErrorExtLog for Error {}
 
 
 pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Display) -> () {
+	
 	if (_level != 0) && (_level < DUMP_LOG_LEVEL) {
 		return;
 	}
+	let _id = log_id ();
 	match (_slug, _code) {
 		("", 0) =>
-			eprintln! ("{}", _message),
+			eprintln! ("{:15} {}", _id, _message),
 		("", _) =>
-			eprintln! ("[{:08x}]  {}", _code, _message),
+			eprintln! ("{:15} [{:08x}]  {}", _id, _code, _message),
 		(_, 0) =>
-			eprintln! ("{} {}", _slug, _message),
+			eprintln! ("{:15} {} {}", _id, _slug, _message),
 		(_, _) =>
-			eprintln! ("{} [{:08x}]  {}", _slug, _code, _message),
+			eprintln! ("{:15} {} [{:08x}]  {}", _id, _slug, _code, _message),
 	}
 	unsafe {
 		_log_empty = false;
@@ -181,6 +183,23 @@ pub(crate) fn log_cut (_forced : bool) -> () {
 		_log_empty = false;
 		_log_cut_last = true;
 	}
+}
+
+pub(crate) fn log_id () -> &'static str {
+	thread_local! {
+		static ID : cell::RefCell<String> = cell::RefCell::new (String::new ());
+	}
+	return ID.with (|_cell| {
+			let _pid = nix::getpid ();
+			let _tid = nix::gettid ();
+			let _id = if _pid == _tid {
+				format! ("[{}]", _pid)
+			} else {
+				format! ("[{}:{}]", _pid, _tid)
+			};
+			_cell.replace (_id);
+			unsafe { &*_cell.as_ptr () } .as_str ()
+		});
 }
 
 #[ allow (non_upper_case_globals) ]
