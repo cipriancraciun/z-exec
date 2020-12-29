@@ -2,41 +2,61 @@
 
 
 
-macro_rules! log_define {
-	( $_name : ident, $_slug : literal, $_level : expr ) => {
-		
-		#[ macro_export ]
-		macro_rules! $_name {
-			( $_code : expr, $_message : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_message))
-			};
-			( $_code : expr, $_format : expr, $_argument_1 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_format, $_argument_1))
-			};
-			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_format, $_argument_1, $_argument_2))
-			};
-			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_format, $_argument_1, $_argument_2, $_argument_3))
-			};
-			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4))
-			};
-			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr, $_argument_5 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, ::std::format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4, $_argument_5))
-			};
-		}
-	}
+#[ macro_export ]
+macro_rules! log_panic {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[!!]", $crate::settings::LOG_LEVEL_PANIC, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
 }
 
-log_define! (log_panic, "[!!]", crate::settings::LOG_LEVEL_PANIC);
-log_define! (log_error, "[ee]", crate::settings::LOG_LEVEL_ERROR);
-log_define! (log_warning, "[ww]", crate::settings::LOG_LEVEL_WARNING);
-log_define! (log_notice, "[ii]", crate::settings::LOG_LEVEL_NOTICE);
-log_define! (log_information, "[ii]", crate::settings::LOG_LEVEL_INFORMATION);
-log_define! (log_debug, "[dd]", crate::settings::LOG_LEVEL_DEBUG);
-log_define! (log_trace, "[dd]", crate::settings::LOG_LEVEL_TRACE);
-log_define! (log_dump, "[dd]", 0);
+#[ macro_export ]
+macro_rules! log_error {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[ee]", $crate::settings::LOG_LEVEL_ERROR, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_warning {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[ww]", $crate::settings::LOG_LEVEL_WARNING, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_notice {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[ii]", $crate::settings::LOG_LEVEL_NOTICE, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_information {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[ii]", $crate::settings::LOG_LEVEL_INFORMATION, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_debug {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[dd]", $crate::settings::LOG_LEVEL_DEBUG, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_trace {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[dd]", $crate::settings::LOG_LEVEL_TRACE, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
+
+#[ macro_export ]
+macro_rules! log_dump {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		$crate::tools::log ("[dd]", $crate::settings::LOG_LEVEL_DUMP, $_code, ::std::format_args! ( $_format $( , $_arguments )* ))
+	};
+}
 
 #[ macro_export ]
 macro_rules! log_cut {
@@ -59,11 +79,8 @@ macro_rules! fail {
 	( $_code : expr ) => {
 		return ::std::result::Result::Err ($crate::tools::error ($_code))
 	};
-	( $_code : expr, $_message : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ($_message)))
-	};
-	( $_code : expr, $_format : expr, $( $_arguments : expr ),* ) => {
-		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ($_format, $( $_arguments ),* )))
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => {
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ( $_format $( , $_arguments )* )))
 	};
 }
 
@@ -71,11 +88,8 @@ macro_rules! fail_wrap {
 	( $_code : expr, $_error : expr ) => {
 		return ::std::result::Result::Err ($crate::tools::error_wrap ($_code, $_error))
 	};
-	( $_code : expr, $_message : expr, $_error : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_wrap_with_message ($_code, ::std::format_args! ($_message), $_error))
-	};
-	( $_code : expr, $_format : expr, $( $_arguments : expr, )* $_error : expr ) => {
-		return ::std::result::Result::Err ($crate::tools::error_wrap_with_message ($_code, ::std::format_args! ($_format, $( $_arguments ),* ), $_error))
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ; $_error : expr ) => {
+		return ::std::result::Result::Err ($crate::tools::error_wrap_with_message ($_code, ::std::format_args! ( $_format $( , $_arguments )* ), $_error))
 	};
 }
 
@@ -88,7 +102,7 @@ macro_rules! fail_unimplemented {
 
 macro_rules! fail_unreachable {
 	( $_code : expr ) => {
-		return ::std::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ("unreachable assertion encountered!")))
+		return ::std::result::Result::Err ($crate::tools::error_with_message ($_code, ::std::format_args! ("unreachable assertion encountered!")))
 	};
 }
 
@@ -101,11 +115,23 @@ macro_rules! fail_assertion {
 
 
 
+macro_rules! panic_with_message {
+	( $_code : expr, $_format : expr $( , $_arguments : expr )* ) => { {
+		$crate::log_panic! ($_code, $_format $( , $_arguments )* );
+		$crate::log_panic! ($_code, "aborting!");
+		if true {
+			::std::process::exit (2);
+		}
+		::std::panic! ($crate::tools::error_with_message ($_code, ::std::format_args! ("unexpected error encountered!")));
+	} };
+}
+
+
 macro_rules! panic_wrap {
 	( $_code : expr, $_error : expr ) => { {
 		$crate::log_panic! ($_code, "unexpected error encountered!");
 		log_panic! (0, "{}", $_error);
-		log_panic! (0x806fbb39, "aborting!");
+		log_panic! ($_code, "aborting!");
 		if true {
 			::std::process::exit (2);
 		}
@@ -116,8 +142,8 @@ macro_rules! panic_wrap {
 
 macro_rules! panic_unreachable {
 	( $_code : expr ) => { {
-		log_panic! ($_code, "unreachable assertion encountered!");
-		log_panic! (0xd7448a6b, "aborting!");
+		$crate::log_panic! ($_code, "unreachable assertion encountered!");
+		$crate::log_panic! ($_code, "aborting!");
 		if true {
 			::std::process::exit (2);
 		}
@@ -127,8 +153,8 @@ macro_rules! panic_unreachable {
 
 macro_rules! panic_assertion {
 	( $_code : expr ) => { {
-		log_panic! ($_code, "unexpected assertion encountered!");
-		log_panic! (0x4d28335c, "aborting!");
+		$crate::log_panic! ($_code, "unexpected assertion encountered!");
+		$crate::log_panic! ($_code, "aborting!");
 		if true {
 			::std::process::exit (2);
 		}
