@@ -148,17 +148,24 @@ pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt:
 	if (_level != 0) && (_level < DUMP_LOG_LEVEL) {
 		return;
 	}
+	
 	let _id = log_id ();
+	let _stream = io::stderr ();
+	let mut _stream = _stream.lock ();
+	
 	match (_slug, _code) {
 		("", 0) =>
-			eprintln! ("{:15} {}", _id, _message),
+			write! (_stream, "{:15} {}\n", _id, _message),
 		("", _) =>
-			eprintln! ("{:15} [{:08x}]  {}", _id, _code, _message),
+			write! (_stream, "{:15} [{:08x}]  {}\n", _id, _code, _message),
 		(_, 0) =>
-			eprintln! ("{:15} {} {}", _id, _slug, _message),
+			write! (_stream, "{:15} {} {}\n", _id, _slug, _message),
 		(_, _) =>
-			eprintln! ("{:15} {} [{:08x}]  {}", _id, _slug, _code, _message),
-	}
+			write! (_stream, "{:15} {} [{:08x}]  {}\n", _id, _slug, _code, _message),
+	} .or_panic (0x4eb5fe30);
+	
+	_stream.flush () .or_panic (0xa6abd3c5);
+	
 	unsafe {
 		_log_empty = false;
 		_log_cut_last = false;
@@ -178,7 +185,13 @@ pub(crate) fn log_cut (_forced : bool) -> () {
 			return;
 		}
 	}
-	eprintln! ("[--]");
+	
+	let _stream = io::stderr ();
+	let mut _stream = _stream.lock ();
+	
+	write! (_stream, "[--]\n") .or_panic (0xdf88e61b);
+	_stream.flush () .or_panic (0x6ecc6e5b);
+	
 	unsafe {
 		_log_empty = false;
 		_log_cut_last = true;
