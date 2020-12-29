@@ -6,14 +6,14 @@ use crate::lib::*;
 
 
 
-pub trait RpcRequest : Serializable {
+pub trait RpcRequest : Serializable + fmt::Debug + Send + 'static {
 	
 	type Response : RpcResponse;
 	
 	fn wrap (self) -> RpcRequestWrapper;
 }
 
-pub trait RpcResponse : Serializable {}
+pub trait RpcResponse : Serializable + fmt::Debug + Send + 'static {}
 
 
 
@@ -29,12 +29,43 @@ serializable! (RpcRequestWrapper : Serializable);
 
 #[ derive (Debug) ]
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
-pub enum RpcOutcome <Response> {
+pub enum RpcOutcome<Response> {
 	Ok (Response),
 	Err (String),
 }
 
-serializable! (RpcOutcome<Response> : Serializable);
+serializable! (RpcOutcome<Response : RpcResponse> : Serializable);
+
+
+impl <Response : RpcResponseDyn> RpcOutcome<Response> {
+	
+	pub fn into_boxed (self) -> RpcOutcomeBox {
+		match self {
+			RpcOutcome::Ok (_response) =>
+				RpcOutcomeBox::Ok (Box::new (_response)),
+			RpcOutcome::Err (_error) =>
+				RpcOutcomeBox::Err (_error),
+		}
+	}
+}
+
+
+
+
+#[ derive (Debug) ]
+#[ derive (serde_derive::Serialize) ]
+pub enum RpcOutcomeBox {
+	Ok (Box<dyn RpcResponseDyn>),
+	Err (String),
+}
+
+serializable! (RpcOutcomeBox : SerializableOnly);
+
+pub trait RpcResponseDyn : SerializableErased + fmt::Debug + Send + 'static {}
+
+serde_erased::serialize_trait_object! (RpcResponseDyn);
+
+impl <Response : RpcResponse + fmt::Debug + Send + 'static> RpcResponseDyn for Response {}
 
 
 

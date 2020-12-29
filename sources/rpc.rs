@@ -46,7 +46,9 @@ pub fn rpc_server_listen (_path : &Path, _path_remove : bool) -> Outcome<(socket
 }
 
 
-pub fn rpc_server_cleanup (_path : &Path, _socket : socket2::Socket, _socket_metadata : fs::Metadata) -> Outcome<()> {
+
+
+pub fn rpc_server_cleanup (_path : &Path, _socket : socket2::Socket, _socket_metadata : fs::Metadata) -> Outcome {
 	
 	log_debug! (0x54dc5a73, "server socket cleaning...");
 	
@@ -60,17 +62,17 @@ pub fn rpc_server_cleanup (_path : &Path, _socket : socket2::Socket, _socket_met
 	
 	log_debug! (0xb4413093, "server socket cleaning finished;");
 	
-	return Ok (());
+	return OK;
 }
 
 
 
 
-pub fn rpc_server_accept_once (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger, _timeout : time::Duration) -> Outcome<Option<socket2::Socket>> {
+pub fn rpc_server_accept_once (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger) -> Outcome<Option<socket2::Socket>> {
 	
 	log_debug! (0xbf2564c9, "server socket accepting...");
 	
-	_socket.set_read_timeout (Some (_timeout)) .or_wrap (0x2e25e024) ?;
+	_socket.set_read_timeout (Some (time::Duration::from_millis (100))) .or_wrap (0x2e25e024) ?;
 	
 	loop {
 		
@@ -100,13 +102,13 @@ pub fn rpc_server_accept_once (_socket : &mut socket2::Socket, _should_stop : &S
 
 
 
-pub fn rpc_server_accept_loop (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger, _handler : fn (socket2::Socket) -> Outcome<()>) -> Outcome<()> {
+pub fn rpc_server_accept_loop (_socket : &mut socket2::Socket, _should_stop : &SyncTrigger, _handler : fn (socket2::Socket) -> Outcome) -> Outcome {
 	
 	let _should_wait = crossbeam_sync::WaitGroup::new ();
 	
 	loop {
 		
-		let _socket = if let Some (_socket) = rpc_server_accept_once (_socket, _should_stop, time::Duration::from_millis (100)) ? {
+		let _socket = if let Some (_socket) = rpc_server_accept_once (_socket, _should_stop) ? {
 			_socket
 		} else {
 			break;
@@ -126,13 +128,13 @@ pub fn rpc_server_accept_loop (_socket : &mut socket2::Socket, _should_stop : &S
 	log_debug! (0x11cbd18f, "server socket client joining...");
 	_should_wait.wait ();
 	
-	return Ok (());
+	return OK;
 }
 
 
 
 
-pub fn rpc_client_connect (_path : &Path) -> Outcome<socket2::Socket> {
+pub fn rpc_client_connect (_path : &Path, _timeout : Option<time::Duration>) -> Outcome<socket2::Socket> {
 	
 	let _address = socket2::SockAddr::unix (_path) .or_wrap (0x7a655f4f) ?;
 	
@@ -143,7 +145,7 @@ pub fn rpc_client_connect (_path : &Path) -> Outcome<socket2::Socket> {
 		)
 		.or_wrap (0x64e7a84e) ?;
 	
-	_socket.set_read_timeout (Some (time::Duration::from_millis (6000))) .or_wrap (0xde8df33e) ?;
+	_socket.set_read_timeout (_timeout.or (time::Duration::from_millis (6000) .into ())) .or_wrap (0xde8df33e) ?;
 	
 	_socket.connect (&_address) .or_wrap (0x26157c64) ?;
 	
@@ -151,12 +153,24 @@ pub fn rpc_client_connect (_path : &Path) -> Outcome<socket2::Socket> {
 }
 
 
-pub fn rpc_client_call <Request : RpcRequest<Response = Response>, Response : RpcResponse> (_socket : &mut socket2::Socket, _request : Request) -> Outcome<Response> {
+
+
+pub fn rpc_client_disconnect (_socket : socket2::Socket) -> Outcome {
+	
+	_socket.shutdown (net::Shutdown::Both) .or_wrap (0x7ba104de) ?;
+	
+	return OK;
+}
+
+
+
+
+pub fn rpc_client_call <Request : RpcRequest<Response = Response>, Response : RpcResponse> (_socket : &mut socket2::Socket, _request : Request, _timeout : Option<time::Duration>) -> Outcome<Response> {
 	
 	let _request = _request.wrap ();
-	rpc_write (_socket, &_request) ?;
+	rpc_write (_socket, &_request, _timeout) ?;
 	
-	match rpc_read::<RpcOutcome<Response>> (_socket) ? {
+	match rpc_read::<RpcOutcome<Response>> (_socket, _timeout) ? {
 		RpcOutcome::Ok (_response) =>
 			return Ok (_response),
 		RpcOutcome::Err (_message) =>
@@ -167,8 +181,8 @@ pub fn rpc_client_call <Request : RpcRequest<Response = Response>, Response : Rp
 
 
 
-pub fn rpc_read <Payload : Serializable> (_socket : &mut socket2::Socket) -> Outcome<Payload> {
-	match rpc_read_or_eof::<Payload> (_socket) ? {
+pub fn rpc_read <Payload : DeserializableRaw> (_socket : &mut socket2::Socket, _timeout : Option<time::Duration>) -> Outcome<Payload> {
+	match rpc_read_or_eof::<Payload> (_socket, _timeout) ? {
 		Some (_payload) =>
 			return Ok (_payload),
 		None =>
@@ -177,12 +191,14 @@ pub fn rpc_read <Payload : Serializable> (_socket : &mut socket2::Socket) -> Out
 }
 
 
-pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket) -> Outcome<Option<Payload>> {
+pub fn rpc_read_or_eof <Payload : DeserializableRaw> (_socket : &mut socket2::Socket, _timeout : Option<time::Duration>) -> Outcome<Option<Payload>> {
 	
 	use bytes::Buf;
 	
 	let mut _buffer = bytes::BytesMut::with_capacity (RPC_BUFFER_SIZE);
 	unsafe { _buffer.set_len (RPC_BUFFER_SIZE); }
+	
+	_socket.set_read_timeout (_timeout.or (time::Duration::from_millis (6000) .into ())) .or_wrap (0x78ce6544) ?;
 	
 	// NOTE:  We are using UNIX domain sockets of type sequence packets, thus packet boundary is solved by the OS.
 	let _received = _socket.recv (_buffer.deref_mut ()) .or_wrap (0x9dd4cbbb) ?;
@@ -197,15 +213,7 @@ pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket)
 	log_debug! (0x9daaaaf4, "received RPC message of {} bytes...", _buffer.len ());
 	
 	let mut _buffer = _buffer.reader ();
-	let _payload = Payload::json_from_stream (&mut _buffer) ?;
-	
-	// FIXME!
-	//let _payload = match serde_bincode::deserialize_from::<_, Payload> (&mut _buffer) {
-	//	Ok (_payload) =>
-	//		_payload,
-	//	Err (_error) =>
-	//		fail_wrap! (0x5aa2eca3, _error),
-	//};
+	let _payload = deserialize_json_from_stream (&mut _buffer) ?;
 	
 	let _buffer = _buffer.into_inner ();
 	
@@ -217,22 +225,18 @@ pub fn rpc_read_or_eof <Payload : Serializable> (_socket : &mut socket2::Socket)
 }
 
 
-pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payload : &Payload) -> Outcome<()> {
+
+
+pub fn rpc_write <Payload : SerializableRaw + ?Sized> (_socket : &mut socket2::Socket, _payload : &Payload, _timeout : Option<time::Duration>) -> Outcome {
 	
 	use bytes::BufMut;
 	
 	let _buffer = bytes::BytesMut::with_capacity (RPC_BUFFER_SIZE);
 	
-	let mut _buffer = _buffer.writer ();
-	_payload.json_into_stream (&mut _buffer, false) ?;
+	_socket.set_write_timeout (_timeout.or (time::Duration::from_millis (6000) .into ())) .or_wrap (0x0b168e16) ?;
 	
-	// FIXME!
-	//match serde_bincode::serialize_into (&mut _buffer, _payload) {
-	//	Ok (()) =>
-	//		(),
-	//	Err (_error) =>
-	//		fail_wrap! (0x4c224ae4, _error),
-	//}
+	let mut _buffer = _buffer.writer ();
+	serialize_json_into_stream (_payload, &mut _buffer, false) ?;
 	
 	let _buffer = _buffer.into_inner ();
 	
@@ -243,13 +247,13 @@ pub fn rpc_write <Payload : Serializable> (_socket : &mut socket2::Socket, _payl
 		fail! (0x39a8d8cf, "failed sending RPC message (buffer truncated)!");
 	}
 	
-	return Ok (());
+	return OK;
 }
 
 
 
 
-fn rpc_server_socket_remove (_path : &Path, _path_remove : Option<bool>, _expected_metadata : Option<fs::Metadata>) -> Outcome<()> {
+fn rpc_server_socket_remove (_path : &Path, _path_remove : Option<bool>, _expected_metadata : Option<fs::Metadata>) -> Outcome {
 	
 	match fs::symlink_metadata (_path) {
 		
@@ -291,12 +295,14 @@ fn rpc_server_socket_remove (_path : &Path, _path_remove : Option<bool>, _expect
 		Err (_error) =>
 			match _error.kind () {
 				io::ErrorKind::NotFound =>
-					log_debug! (0x22dc2d03, "server socket path does not exist: `{}`;  ignoring!", _path.display ()),
+					if _expected_metadata.is_some () {
+						log_debug! (0x22dc2d03, "server socket path does not exist: `{}`;  ignoring!", _path.display ());
+					}
 				_ =>
 					fail_wrap! (0xfb94f36f, _error),
 			}
 	}
 	
-	return Ok (());
+	return OK;
 }
 
