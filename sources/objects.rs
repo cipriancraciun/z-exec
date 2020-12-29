@@ -126,6 +126,104 @@ impl From<Vec<u8>> for StringDescriptor {
 
 
 
+#[ derive (Debug) ]
+#[ derive (Clone, Eq, PartialEq, Hash) ]
+#[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
+pub struct Identifier (u128);
+
+impl Identifier {
+	
+	pub fn new () -> Self {
+		return Identifier (uuid::Uuid::new_v4 () .as_u128 ());
+	}
+}
+
+impl fmt::Display for Identifier {
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return _formatter.write_fmt (format_args! ("{:032x}", self.0));
+	}
+}
+
+
+
+
+#[ derive (Debug) ]
+#[ derive (Copy, Clone) ]
+#[ derive (Eq, PartialEq, Hash) ]
+pub struct ProcessId (libc::pid_t);
+
+impl ProcessId {
+	
+	pub fn from_raw (_raw : libc::pid_t) -> Self {
+		return ProcessId (_raw);
+	}
+}
+
+impl fmt::Display for ProcessId {
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return _formatter.write_fmt (format_args! ("{}", self.0));
+	}
+}
+
+
+#[ derive (Debug) ]
+#[ derive (Copy, Clone) ]
+#[ derive (Eq, PartialEq, Hash) ]
+pub struct ProcessExit (libc::c_int);
+
+impl ProcessExit {
+	
+	pub fn from_raw (_raw : libc::c_int) -> Self {
+		return ProcessExit (_raw);
+	}
+}
+
+impl fmt::Display for ProcessExit {
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return _formatter.write_fmt (format_args! ("{}", self.0));
+	}
+}
+
+
+#[ derive (Debug) ]
+#[ derive (Copy, Clone) ]
+#[ derive (Eq, PartialEq, Hash) ]
+pub struct ProcessSignal (libc::c_int);
+
+impl ProcessSignal {
+	
+	pub fn from_raw (_raw : libc::c_int) -> Self {
+		return ProcessSignal (_raw);
+	}
+	
+	pub fn as_str (&self) -> &'static str {
+		for _signal in nix::Signal::iterator () {
+			if (_signal as libc::c_int) == self.0 {
+				return _signal.as_str ();
+			}
+		}
+		return "SIG???";
+	}
+}
+
+impl fmt::Display for ProcessSignal {
+	fn fmt (&self, _formatter : &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		return _formatter.write_fmt (format_args! ("{}", self.as_str ()));
+	}
+}
+
+
+#[ derive (Debug) ]
+#[ derive (Copy, Clone) ]
+#[ derive (Eq, PartialEq, Hash) ]
+pub enum ProcessOutcome {
+	Exited (ProcessExit),
+	Killed (ProcessSignal),
+}
+
+
+
+
 serializable! (ProcessDescriptor : Serializable);
 serializable! (CommandDescriptor : Serializable);
 serializable! (EnvironmentDescriptor : Serializable);
