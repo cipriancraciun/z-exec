@@ -1,6 +1,0 @@
-{
-	"command" : {
-		"executable" : "lsof",
-		"arguments" : ["-c", "lsof"]
-	}
-}

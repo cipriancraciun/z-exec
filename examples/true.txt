@@ -6,12 +6,7 @@ ProcessDescriptor {
         argument0: None,
         arguments: None,
     },
-    environment: Some(
-        EnvironmentDescriptor {
-            inherit: false,
-            variables: None,
-        },
-    ),
+    environment: None,
     directory: None,
     stdio: None,
 }

@@ -1,0 +1,6 @@
+{
+	"command" : {
+		"executable" : "ls",
+		"arguments" : ["-l", "--", "/proc/self/fd"]
+	}
+}

@@ -129,7 +129,7 @@
 <<== do / examples / generate
 	#! <template>
 	
-	{{ $_examples := array "true" "hello" "env" "lsof" }}
+	{{ $_examples := array "true" "hello" "env" "ls-proc-fd" }}
 	{{ $_actions := array "dump" "exec" }}
 	
 	{{ range $_, $_action := $_actions }}
@@ -149,4 +149,3 @@
 	
 	{{ end }}
 !!
-
