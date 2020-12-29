@@ -71,6 +71,14 @@ impl ErrorExtWrap for io::Error {
 }
 
 
+impl ErrorExtWrap for nix::Error {
+	
+	fn wrap (self, _code : u32) -> Error {
+		return error_wrap (_code, self);
+	}
+}
+
+
 
 
 pub trait ResultExtLog<Value, Error : ErrorExtLog>
@@ -150,8 +158,7 @@ pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt:
 	}
 	
 	let _id = log_id ();
-	let _stream = io::stderr ();
-	let mut _stream = _stream.lock ();
+	let mut _stream = _LOG_STREAM.lock ();
 	
 	match (_slug, _code) {
 		("", 0) =>
@@ -187,7 +194,7 @@ pub(crate) fn log_cut (_forced : bool) -> () {
 	}
 	
 	let _stream = io::stderr ();
-	let mut _stream = _stream.lock ();
+	let mut _stream = _LOG_STREAM.lock ();
 	
 	write! (_stream, "[--]\n") .or_panic (0xdf88e61b);
 	_stream.flush () .or_panic (0x6ecc6e5b);
@@ -219,6 +226,11 @@ pub(crate) fn log_id () -> &'static str {
 static mut _log_empty : bool = true;
 #[ allow (non_upper_case_globals) ]
 static mut _log_cut_last : bool = false;
+
+lazy_static::lazy_static! {
+	#[ allow (non_upper_case_globals) ]
+	static ref _LOG_STREAM : io::Stderr = io::stderr ();
+}
 
 
 
