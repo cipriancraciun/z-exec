@@ -26,11 +26,8 @@ pub fn main () -> ! {
 			b"execute-from" =>
 				main_execute_from (&_arguments[2..]),
 			
-			b"server" |
-			b"server-listen" =>
+			b"server" =>
 				main_server_listen (&_arguments[2..]),
-			b"server-handle" =>
-				main_server_handle (&_arguments[2..]),
 			
 			_ =>
 				Err (error_with_message (0x8cd8f849, format! ("invalid command `{}`!", _arguments[1].to_string_lossy ()))),
