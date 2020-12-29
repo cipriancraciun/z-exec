@@ -20,7 +20,7 @@ pub fn process_execute (_descriptor : &ProcessDescriptor, _environment : Option<
 		Ok (_) =>
 			fail_assertion! (0x2ae4ad32),
 		Err (_error) =>
-			fail_wrap! (0x12f9517e, "failed calling `execvpe`!", _error),
+			fail_wrap! (0x12f9517e, "failed calling `execvpe`!"; _error),
 	}
 }
 
@@ -46,7 +46,7 @@ pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<im
 		}
 		
 		Err (_error) =>
-			fail_wrap! (0x16900d78, "failed fork!", _error),
+			fail_wrap! (0x16900d78, "failed fork!"; _error),
 	}
 }
 
@@ -69,7 +69,7 @@ pub fn process_wait () -> Outcome<Option<(ProcessId, ProcessOutcome)>> {
 			return Ok (None),
 		
 		Err (_error) =>
-			fail_wrap! (0x09fa400d, "failed wait!", _error),
+			fail_wrap! (0x09fa400d, "failed wait!"; _error),
 	}
 }
 
@@ -193,7 +193,7 @@ pub fn process_close_all_fd () -> Outcome<()> {
 				// NOTE:  Descriptor did not exist and was ignored.
 				(),
 			Err (_error) =>
-				fail_wrap! (0x45bcdf29, "failed calling `close`!", _error),
+				fail_wrap! (0x45bcdf29, "failed calling `close`!"; _error),
 		}
 	}
 	

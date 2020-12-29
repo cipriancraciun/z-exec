@@ -10,13 +10,13 @@ pub fn serialize_json_into_string <Value : serde::Serialize + ?Sized> (_value : 
 	let mut _stream = WriteFmtIoAdapter::new (_string);
 	let _outcome = serialize_json_into_stream (_value, &mut _stream, _pretty);
 	if let Some (_error) = _stream.finalize () {
-		fail_wrap! (0x65dbef3a, "failed serialization!", _error);
+		fail_wrap! (0x65dbef3a, "failed serialization!"; _error);
 	}
 	match _outcome {
 		Ok (()) =>
 			return Ok (()),
 		Err (_error) =>
-			fail_wrap! (0xd9e66e38, "failed serialization!", _error),
+			fail_wrap! (0xd9e66e38, "failed serialization!"; _error),
 	}
 }
 
@@ -32,7 +32,7 @@ pub fn serialize_json_into_stream <Value : serde::Serialize + ?Sized, Stream : i
 		Ok (()) =>
 			return Ok (()),
 		Err (_error) =>
-			fail_wrap! (0x529f5ea9, "failed serialization!", _error),
+			fail_wrap! (0x529f5ea9, "failed serialization!"; _error),
 	}
 }
 
@@ -42,7 +42,7 @@ pub fn deserialize_json_from_string <Value : serde::de::DeserializeOwned>  (_str
 		Ok (_value) =>
 			return Ok (_value),
 		Err (_error) =>
-			fail_wrap! (0xa4bf801b, "failed deserialization!", _error),
+			fail_wrap! (0xa4bf801b, "failed deserialization!"; _error),
 	}
 }
 
@@ -51,7 +51,7 @@ pub fn deserialize_json_from_stream <Value : serde::de::DeserializeOwned, Stream
 		Ok (_value) =>
 			return Ok (_value),
 		Err (_error) =>
-			fail_wrap! (0x2bd3b5d9, "failed deserialization!", _error),
+			fail_wrap! (0x2bd3b5d9, "failed deserialization!"; _error),
 	}
 }
 
@@ -88,13 +88,13 @@ pub fn serialize_ron_into_string <Value : serde::Serialize + ?Sized> (_value : &
 	let mut _stream = WriteFmtIoAdapter::new (_string);
 	let _outcome = serialize_ron_into_stream (_value, &mut _stream, _pretty);
 	if let Some (_error) = _stream.finalize () {
-		fail_wrap! (0x3a6aa74c, "failed serialization!", _error);
+		fail_wrap! (0x3a6aa74c, "failed serialization!"; _error);
 	}
 	match _outcome {
 		Ok (()) =>
 			return Ok (()),
 		Err (_error) =>
-			fail_wrap! (0x2f6a2251, "failed serialization!", _error),
+			fail_wrap! (0x2f6a2251, "failed serialization!"; _error),
 	}
 }
 
@@ -112,13 +112,13 @@ pub fn serialize_ron_into_stream <Value : serde::Serialize + ?Sized, Stream : io
 		Ok (_serializer) =>
 			_serializer,
 		Err (_error) =>
-			fail_wrap! (0x1d67fd96, "failed serialization!", _error),
+			fail_wrap! (0x1d67fd96, "failed serialization!"; _error),
 	};
 	match _value.serialize (&mut _serializer) {
 		Ok (()) =>
 			return Ok (()),
 		Err (_error) =>
-			fail_wrap! (0xeed758c1, "failed serialization!", _error),
+			fail_wrap! (0xeed758c1, "failed serialization!"; _error),
 	}
 }
 
@@ -128,7 +128,7 @@ pub fn deserialize_ron_from_string <Value : serde::de::DeserializeOwned> (_strin
 		Ok (_value) =>
 			return Ok (_value),
 		Err (_error) =>
-			fail_wrap! (0x139c3281, "failed deserialization!", _error),
+			fail_wrap! (0x139c3281, "failed deserialization!"; _error),
 	}
 }
 
@@ -137,7 +137,7 @@ pub fn deserialize_ron_from_stream <Value : serde::de::DeserializeOwned, Stream 
 		Ok (_value) =>
 			return Ok (_value),
 		Err (_error) =>
-			fail_wrap! (0x8dc2b764, "failed deserialization!", _error),
+			fail_wrap! (0x8dc2b764, "failed deserialization!"; _error),
 	}
 }
 
