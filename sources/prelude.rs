@@ -34,12 +34,15 @@ pub(crate) mod nix {
 	pub(crate) use nix::errno::*;
 	pub(crate) use nix::errno::Errno::*;
 	pub(crate) use nix::unistd::*;
+	pub(crate) use nix::sys::wait::*;
+	pub(crate) use nix::sys::signal::*;
 }
 
 pub(crate) use ::lazy_static;
 pub(crate) use ::scopeguard;
 pub(crate) use ::argparse;
 pub(crate) use ::owning_ref;
+pub(crate) use ::uuid;
 
 
 
@@ -98,6 +101,7 @@ pub(crate) use ::std::path::Path;
 pub(crate) use ::std::path::PathBuf;
 
 
+pub(crate) use ::std::fmt::Write as _;
 pub(crate) use ::std::io::Read as _;
 pub(crate) use ::std::io::Write as _;
 
