@@ -53,6 +53,29 @@ pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<im
 
 
 
+pub fn process_wait () -> Outcome<Option<(ProcessId, ProcessOutcome)>> {
+	
+	match nix::waitpid (None, Some (nix::WaitPidFlag::WNOHANG)) {
+		
+		Ok (nix::WaitStatus::Exited (_id, _exit)) =>
+			return Ok (Some ((ProcessId::from_raw (_id.as_raw ()), ProcessOutcome::Exited (ProcessExit::from_raw (_exit))))),
+		Ok (nix::WaitStatus::Signaled (_id, _signal, _)) =>
+			return Ok (Some ((ProcessId::from_raw (_id.as_raw ()), ProcessOutcome::Killed (ProcessSignal::from_raw (_signal as libc::c_int))))),
+		
+		Ok (_) =>
+			return Ok (None),
+		
+		Err (nix::Error::Sys (nix::ECHILD)) =>
+			return Ok (None),
+		
+		Err (_error) =>
+			fail_wrap! (0x09fa400d, "failed wait!", _error),
+	}
+}
+
+
+
+
 pub fn process_build_arguments (_descriptor : &CommandDescriptor) -> Outcome<Vec<CString>> {
 	
 	let _argument0 = if let Some (_argument0) = &_descriptor.argument0 {
