@@ -6,11 +6,23 @@ use crate::lib::*;
 
 
 
-pub fn process_execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<()> {
+pub struct ProcessStdio {
+	pub stdin : Option<io_unix::RawFd>,
+	pub stdout : Option<io_unix::RawFd>,
+	pub stderr : Option<io_unix::RawFd>,
+}
+
+
+
+
+pub fn process_execute (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>, _stdio : Option<&ProcessStdio>) -> Outcome<()> {
 	
 	let _command = &_descriptor.command;
 	
-//	close_all_fd () ?;
+	if let Some (_stdio) = _stdio {
+		process_fd_stdio (_stdio.stdin, _stdio.stdout, _stdio.stderr) ?;
+	}
+	process_fd_close_all (true, true, true) ?;
 	
 	let _executable = convert_osstr_to_cstring (&_command.executable.as_ref ()) ?;
 	let _arguments = process_build_arguments (&_descriptor.command) ?;
@@ -27,7 +39,7 @@ pub fn process_execute (_descriptor : &ProcessDescriptor, _environment : Option<
 
 
 
-pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>) -> Outcome<ProcessId> {
+pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<impl Iterator<Item = (OsString, OsString)>>, _stdio : Option<&ProcessStdio>) -> Outcome<ProcessId> {
 	
 	match unsafe { nix::fork () } {
 		
@@ -35,7 +47,7 @@ pub fn process_spawn (_descriptor : &ProcessDescriptor, _environment : Option<im
 			return Ok (ProcessId::from_raw (_child.as_raw ())),
 		
 		Ok (nix::ForkResult::Child) => {
-			match process_execute (_descriptor, _environment) {
+			match process_execute (_descriptor, _environment, _stdio) {
 				Ok (_) =>
 					fail_assertion! (0x32933043),
 				Err (_error) => {
@@ -173,7 +185,34 @@ pub fn process_build_environment (_descriptor : Option<&EnvironmentDescriptor>, 
 
 
 
-pub fn process_close_all_fd () -> Outcome<()> {
+pub fn process_fd_stdio (_stdin : Option<io_unix::RawFd>, _stdout : Option<io_unix::RawFd>, _stderr : Option<io_unix::RawFd>) -> Outcome<()> {
+	
+	if let Some (_stdin) = _stdin {
+		if _stdin != 0 {
+			log_debug! (0x79cff2f5, "setting stdin to `{}`...", _stdin);
+			nix::dup2 (_stdin, 0) .or_wrap (0xcbdbaef8) ?;
+		}
+	}
+	if let Some (_stdout) = _stdout {
+		if _stdout != 1 {
+			log_debug! (0x79cff2f5, "setting stdout to `{}`...", _stdout);
+			nix::dup2 (_stdout, 1) .or_wrap (0x4577385e) ?;
+		}
+	}
+	if let Some (_stderr) = _stderr {
+		if _stderr != 2 {
+			log_debug! (0x79cff2f5, "setting stderr to `{}`...", _stderr);
+			nix::dup2 (_stderr, 2) .or_wrap (0x1dbf5a04) ?;
+		}
+	}
+	
+	return Ok (());
+}
+
+
+
+
+pub fn process_fd_close_all (_skip_stdin : bool, _skip_stdout : bool, _skip_stderr : bool) -> Outcome<()> {
 	
 	let _limit : io_unix::RawFd = unsafe {
 		let _limit = libc::getdtablesize ();
@@ -185,15 +224,31 @@ pub fn process_close_all_fd () -> Outcome<()> {
 	};
 	
 	for _descriptor in 0 .. _limit {
-		match nix::close (_descriptor) {
-			Ok (()) =>
-				// NOTE:  Descriptor existed and was closed.
-				(),
-			Err (nix::Error::Sys (nix::Errno::EBADF)) =>
-				// NOTE:  Descriptor did not exist and was ignored.
+		
+		match _descriptor {
+			0 if _skip_stdin => continue,
+			1 if _skip_stdout => continue,
+			2 if _skip_stderr => continue,
+			_ => (),
+		}
+		
+		let _path = PathBuf::from (format! ("/proc/self/fd/{}", _descriptor));
+		match nix::readlink (&_path) {
+			Ok (_path) =>
+				log_debug! (0xa471f1e8, "closing file `{}` pointing to `{}`...", _descriptor, _path.to_string_lossy ()),
+			Err (nix::Error::Sys (nix::ENOENT)) =>
 				(),
 			Err (_error) =>
-				fail_wrap! (0x45bcdf29, "failed calling `close`!"; _error),
+				log_error! (0x19d71755, "failed calling `readlink` for `{}`;  ignoring!  //  {}", _descriptor, _error),
+		}
+		
+		match nix::close (_descriptor) {
+			Ok (()) =>
+				log_debug! (0x011f2af2, "closed file `{}`;", _descriptor),
+			Err (nix::Error::Sys (nix::EBADF)) =>
+				(),
+			Err (_error) =>
+				log_error! (0x442896d3, "failed calling `close` for `{}`;  ignoring!  //  {}", _descriptor, _error),
 		}
 	}
 	

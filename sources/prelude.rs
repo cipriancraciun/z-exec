@@ -32,6 +32,7 @@ pub(crate) mod nix {
 	pub(crate) use ::nix::Error;
 	pub(crate) use ::nix::errno::*;
 	pub(crate) use ::nix::errno::Errno::*;
+	pub(crate) use ::nix::fcntl::*;
 	pub(crate) use ::nix::unistd::*;
 	pub(crate) use ::nix::sys::wait::*;
 	pub(crate) use ::nix::sys::signal::*;

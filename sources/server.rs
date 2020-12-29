@@ -25,6 +25,10 @@ struct ServerContext {
 	
 	handler_sender : SyncCallSender<RpcRequestWrapper, RpcOutcomeBox>,
 	spawner_sender : SyncCallSender<ProcessDescriptor, Outcome<SyncBox<ProcessState>>>,
+	
+	spawn_stdin : Option<fs::File>,
+	spawn_stdout : Option<fs::File>,
+	spawn_stderr : Option<fs::File>,
 }
 
 
@@ -89,6 +93,10 @@ impl Server {
 		
 		let _socket = _socket.try_clone () .or_wrap (0x8c84e649) ?;
 		
+		let _spawn_stdin = fs::OpenOptions::new () .read (true) .open ("/dev/null") .or_panic (0x59145fc4);
+		let _spawn_stdout = fs::OpenOptions::new () .append (true) .open ("/dev/stderr") .or_panic (0x79ff9047);
+		let _spawn_stderr = fs::OpenOptions::new () .append (true) .open ("/dev/stderr") .or_panic (0x756fdc00);
+		
 		let _waiter = crossbeam_sync::WaitGroup::new ();
 		
 		let (_handler_sender, _handler_receiver) = sync_call_new ();
@@ -97,6 +105,9 @@ impl Server {
 		let _context = ServerContext {
 				handler_sender : _handler_sender,
 				spawner_sender : _spawner_sender,
+				spawn_stdin : Some (_spawn_stdin),
+				spawn_stdout : Some (_spawn_stdout),
+				spawn_stderr : Some (_spawn_stderr),
 			};
 		
 		let _state = ServerState {
@@ -326,7 +337,17 @@ fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<Proces
 		
 		log_debug! (0xfea575bc, "server spawning process `{}`...", _identifier);
 		
-		let _pid = match process_spawn (&_descriptor, Some (env::vars_os ())) {
+		// FIXME:  Make sure that nobody touches `spawn_std*` members!
+		let _stdio = {
+			let _context = _self.context.lock ();
+			ProcessStdio {
+					stdin : _context.spawn_stdin.as_ref () .map (io_unix::AsRawFd::as_raw_fd),
+					stdout : _context.spawn_stdout.as_ref () .map (io_unix::AsRawFd::as_raw_fd),
+					stderr : _context.spawn_stderr.as_ref () .map (io_unix::AsRawFd::as_raw_fd),
+				}
+		};
+		
+		let _pid = match process_spawn (&_descriptor, Some (env::vars_os ()), Some (&_stdio)) {
 			Ok (_pid) =>
 				_pid,
 			Err (_error) => {
