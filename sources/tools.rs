@@ -122,18 +122,18 @@ impl <Value, Error : ErrorExtLog> ResultExtLog<Value, Error> for Result<Value, E
 
 
 pub trait ErrorExtLog
-		where Self : error::Error + Sized
+		where Self : error::Error
 {
-	fn panic (self, _code : u32) -> ! {
+	fn panic (&self, _code : u32) -> ! {
 		panic_wrap! (0xe676e54a, self);
 	}
 	
-	fn log_error (self, _code : u32) -> () {
-		log ("[ee]", LOG_LEVEL_ERROR, _code, self);
+	fn log_error (&self, _code : u32) -> () {
+		log_error ("[ee]", LOG_LEVEL_ERROR, _code, self);
 	}
 	
-	fn log_warning (self, _code : u32) -> () {
-		log ("[ww]", LOG_LEVEL_WARNING, _code, self);
+	fn log_warning (&self, _code : u32) -> () {
+		log_error ("[ww]", LOG_LEVEL_WARNING, _code, self);
 	}
 }
 
@@ -163,7 +163,7 @@ pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt:
 	}
 }
 
-pub(crate) fn log_error (_slug : &str, _level : u16, _code : u32, _error : impl error::Error) -> () {
+pub(crate) fn log_error <Error : error::Error + ?Sized> (_slug : &str, _level : u16, _code : u32, _error : &Error) -> () {
 	log (_slug, _level, _code, format_args! ("unexpected error encountered!  ignoring!  //  {}", _error));
 }
 
@@ -320,6 +320,7 @@ impl <'a, Value> DerefMut for SyncBoxRef <'a, Value> {
 
 
 
+
 pub struct SyncCallSender <Input, Output> {
 	invoke_sender : mpsc::SyncSender<(Input, mpsc::SyncSender<Output>)>,
 }
@@ -328,8 +329,7 @@ pub struct SyncCallReceiver <Input, Output> {
 	invoke_receiver : mpsc::Receiver<(Input, mpsc::SyncSender<Output>)>,
 }
 
-pub struct SyncCallInvoke <Input, Output> {
-	pub input : Input,
+pub struct SyncCallReturn <Output> {
 	return_sender : mpsc::SyncSender<Output>,
 }
 
@@ -375,13 +375,14 @@ impl <Input, Output> SyncCallSender<Input, Output> {
 
 impl <Input, Output> SyncCallReceiver<Input, Output> {
 	
-	pub fn wait (&self, _timeout : time::Duration) -> Option<SyncCallInvoke<Input, Output>> {
+	pub fn wait (&self, _timeout : time::Duration) -> Option<(Input, SyncCallReturn<Output>)> {
 		match self.invoke_receiver.recv_timeout (_timeout) {
-			Ok ((_input, _return_sender)) =>
-				return Some (SyncCallInvoke {
-						input : _input,
+			Ok ((_input, _return_sender)) => {
+				let _return = SyncCallReturn {
 						return_sender : _return_sender,
-					}),
+					};
+				return Some ((_input, _return));
+			}
 			Err (mpsc::RecvTimeoutError::Timeout) =>
 				return None,
 			Err (mpsc::RecvTimeoutError::Disconnected) =>
@@ -391,7 +392,7 @@ impl <Input, Output> SyncCallReceiver<Input, Output> {
 }
 
 
-impl <Input, Output> SyncCallInvoke<Input, Output> {
+impl <Output> SyncCallReturn<Output> {
 	
 	pub fn done (self, _output : Output) -> () {
 		match self.return_sender.send (_output) {
@@ -400,6 +401,18 @@ impl <Input, Output> SyncCallInvoke<Input, Output> {
 			Err (_) =>
 				log_warning! (0x2668c2f3, "caller terminated;  ignoring!"),
 		}
+	}
+}
+
+
+impl <Value, Error> SyncCallReturn<Result<Value, Error>> {
+	
+	pub fn succeeded (self, _value : Value) -> () {
+		self.done (Ok (_value));
+	}
+	
+	pub fn failed (self, _error : Error) -> () {
+		self.done (Err (_error));
 	}
 }
 
@@ -420,6 +433,54 @@ pub fn thread_join (_joiner : thread::JoinHandle<Outcome<()>>) -> Outcome<()> {
 			return _outcome,
 		Err (_error) =>
 			fail! (0xa26812e1, "thread terminated! //  {:?}", _error),
+	}
+}
+
+
+
+
+pub trait OptionExt <Value>
+		where Self : Sized
+{
+	
+	fn option (self) -> Option<Value>;
+	
+	fn or_panic (self, _code : u32) -> Value {
+		match self.option () {
+			Some (_value) =>
+				return _value,
+			None =>
+				panic_with_message! (_code, "unexpected option missing value!"),
+		}
+	}
+	
+	fn panic_if_some (self, _code : u32) -> () {
+		self.panic_if (_code, false);
+	}
+	
+	fn panic_if_none (self, _code : u32) -> () {
+		self.panic_if (_code, true);
+	}
+	
+	fn panic_if (self, _code : u32, _expected : bool) -> () {
+		match self.option () {
+			Some (_) =>
+				if ! _expected {
+					panic_with_message! (_code, "unexpected option present value!");
+				}
+			None =>
+				if _expected {
+					panic_with_message! (_code, "unexpected option missing value!");
+				}
+		}
+	}
+}
+
+
+impl <Value> OptionExt<Value> for Option<Value> {
+	
+	fn option (self) -> Self {
+		return self;
 	}
 }
 
