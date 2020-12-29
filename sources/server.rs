@@ -347,6 +347,9 @@ fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<Proces
 				}
 		};
 		
+		// NOTE:  We lock the state here so we don't enter into a race condition with the ripper thread.
+		let mut _state = _self.state.lock ();
+		
 		let _pid = match process_spawn (&_descriptor, Some (env::vars_os ()), Some (&_stdio)) {
 			Ok (_pid) =>
 				_pid,
@@ -356,6 +359,9 @@ fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<Proces
 				continue;
 			}
 		};
+		
+		// FIXME:  We wait a little bit so that the subprocess has time to write to stderr.
+		thread::sleep (time::Duration::from_millis (100));
 		
 		log_information! (0x9b169fe3, "server spawned process `{}` with pid `{}`;", _identifier, _pid);
 		
@@ -367,7 +373,6 @@ fn server_spawner_loop (_self : ThreadState, _receiver : SyncCallReceiver<Proces
 		
 		let _process = SyncBox::new (_process);
 		
-		let mut _state = _self.state.lock ();
 		_state.processes.insert (_identifier.clone (), _process.clone ()) .panic_if_some (0xb63f76e2);
 		_state.processes_by_pid.insert (_pid, _identifier.clone ()) .panic_if_some (0x039ff515);
 		
