@@ -76,7 +76,13 @@ pub struct StdioDescriptor {
 #[ derive (serde_derive::Serialize, serde_derive::Deserialize) ]
 pub enum IoDescriptor {
 	Inherit,
+	Broken,
+	Logger,
 	DevNull,
+	DevStdin,
+	DevStdout,
+	DevStderr,
+	DevTty,
 }
 
 
